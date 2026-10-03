@@ -15,6 +15,10 @@ export interface Settings {
   customRpcUrl: string;
   muted: boolean;
   fastBoot: boolean;
+  /** Writes (sends, burns) on mainnet need an explicit opt-in. */
+  allowMainnetTransactions: boolean;
+  /** Wallet to reconnect silently on the next visit. */
+  lastWallet: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -27,6 +31,8 @@ export const DEFAULT_SETTINGS: Settings = {
   customRpcUrl: '',
   muted: false,
   fastBoot: false,
+  allowMainnetTransactions: false,
+  lastWallet: '',
 };
 
 const STORAGE_KEY = 'solanaos.settings.v1';
@@ -78,4 +84,11 @@ export function endpointHost(url: string): string {
   } catch {
     return url;
   }
+}
+
+/** Wallet Standard chain id for the current cluster. */
+export function chainFor(s: Pick<Settings, 'cluster' | 'customRpcUrl'>): 'solana:devnet' | 'solana:mainnet' {
+  if (s.cluster === 'devnet') return 'solana:devnet';
+  if (s.cluster === 'custom' && /devnet/i.test(s.customRpcUrl)) return 'solana:devnet';
+  return 'solana:mainnet';
 }

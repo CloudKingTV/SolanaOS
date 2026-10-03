@@ -390,6 +390,76 @@ const icons = {
         <circle cx="24" cy="17" r="0.8" fill="#fff" />
       </>,
     ),
+  drive: (u) => (
+    <>
+      <defs>
+        {lg(u('dv'), [['0', '#f4f4f6'], ['0.5', '#d9dbe2'], ['1', '#a9adb9']])}
+        {lg(u('dl'), [['0', '#9945FF'], ['1', '#14F195']], 1, 0)}
+      </defs>
+      <path d="M3 13l4-6h18l4 6v11H3z" fill={`url(#${u('dv')})`} stroke="#555a68" strokeLinejoin="round" />
+      <path d="M3 13h26" stroke="#555a68" />
+      <rect x="5" y="16" width="22" height="5" rx="1" fill="#e9ebf0" stroke="#8a8f9c" />
+      <rect x="6" y="17" width="12" height="3" fill={`url(#${u('dl')})`} />
+      <circle cx="24.5" cy="18.5" r="1" fill="#14F195" />
+      {solanaMark(u, 11, 8.6, 0.42)}
+    </>
+  ),
+  coin: (u) => (
+    <>
+      <defs>
+        <radialGradient id={u('cn')} cx="0.35" cy="0.3" r="0.8">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.35" stopColor="#c9b6ff" />
+          <stop offset="1" stopColor="#6a3fe0" />
+        </radialGradient>
+      </defs>
+      <ellipse cx="16" cy="18" rx="12" ry="11" fill="#3f1aa0" />
+      <circle cx="16" cy="15.5" r="12" fill={`url(#${u('cn')})`} stroke="#2e1470" />
+      <circle cx="16" cy="15.5" r="8.5" fill="none" stroke="#ffffff" strokeOpacity="0.55" />
+      {solanaMark(u, 10, 10.6, 0.5)}
+    </>
+  ),
+  'explorer-web': (u) => (
+    <>
+      <defs>
+        <radialGradient id={u('ew')} cx="0.35" cy="0.3" r="0.8">
+          <stop offset="0" stopColor="#d9f3ff" />
+          <stop offset="1" stopColor="#3a74e0" />
+        </radialGradient>
+        {lg(u('er'), [['0', '#9945FF'], ['1', '#14F195']], 1, 0)}
+      </defs>
+      <circle cx="16" cy="16" r="11" fill={`url(#${u('ew')})`} stroke="#1d3f8a" />
+      <text x="16" y="22.5" fontSize="18" fontWeight="bold" textAnchor="middle" fill="#fff" fontFamily="Georgia, serif" stroke="#1d3f8a" strokeWidth="0.6">e</text>
+      <ellipse cx="16" cy="16" rx="15" ry="5.5" fill="none" stroke={`url(#${u('er')})`} strokeWidth="2.4" transform="rotate(-25 16 16)" />
+    </>
+  ),
+  inbox: (u) => (
+    <>
+      <defs>{lg(u('ib'), [['0', '#ffffff'], ['1', '#dfe4ef']])}</defs>
+      <rect x="3" y="8" width="26" height="18" rx="1.5" fill={`url(#${u('ib')})`} stroke="#4f5f80" />
+      <path d="M3.5 9l12.5 10 12.5-10" fill="none" stroke="#4f5f80" />
+      <path d="M3.5 25.5l9.5-8M28.5 25.5l-9.5-8" stroke="#8a97b2" />
+      <circle cx="25" cy="8" r="5" fill="#14b981" stroke="#fff" />
+      <path d="M23 8h4M25 6v4" stroke="#fff" strokeWidth="1.5" />
+    </>
+  ),
+  send: (u) => (
+    <>
+      <defs>{lg(u('sn'), [['0', '#b58cff'], ['1', '#5a1fc9']], 1, 1)}</defs>
+      <path d="M3 15L29 4 21 28l-5-9z" fill={`url(#${u('sn')})`} stroke="#2e1470" strokeLinejoin="round" />
+      <path d="M16 19L29 4" stroke="#e9e0ff" strokeWidth="1.2" />
+      <path d="M16 19l-1 7 3.5-4" fill="#3f1aa0" />
+    </>
+  ),
+  airdrop: (u) => (
+    <>
+      <defs>{lg(u('ad'), [['0', '#14F195'], ['1', '#9945FF']], 1, 0)}</defs>
+      <path d="M4 14C4 7 10 3 16 3s12 4 12 11c-2-2-4-2-6 0-2-2-4-2-6 0-2-2-4-2-6 0-2-2-4-2-6 0z" fill={`url(#${u('ad')})`} stroke="#2e1470" />
+      <path d="M4.5 14L14 23M27.5 14L18 23M16 14v9" stroke="#2e1470" />
+      <rect x="12.5" y="22" width="7" height="7" rx="1" fill="#f2c650" stroke="#8a6a1a" />
+      {solanaMark(u, 13.3, 23.4, 0.22)}
+    </>
+  ),
 } satisfies Record<string, Draw>;
 
 export type IconName = keyof typeof icons;

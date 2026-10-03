@@ -6,6 +6,11 @@ import { useNetStatus, checkNetwork } from '../os/solana/status';
 import { Icon, SolanaLogo } from './icons';
 import { openContextMenu, sep } from './Menu';
 import { StartMenu } from './StartMenu';
+import { useWallet } from '../os/wallet/standard';
+import { usePortfolio } from '../os/wallet/portfolio';
+import { formatSol } from '../os/solana/rpc';
+import { copyText, safelyRemoveWallet } from '../os/wallet/actions';
+import { WalletIcon } from './WalletPicker';
 
 function Clock() {
   const [now, setNow] = useState(() => new Date());
@@ -57,6 +62,43 @@ function Balloon() {
   );
 }
 
+function WalletTray() {
+  const conn = useWallet((s) => s.connection);
+  const lamports = usePortfolio((s) => s.lamports);
+  if (!conn) {
+    return (
+      <button type="button" className="tray-icon tray-wallet off" title="No wallet connected. Click to connect." aria-label="Connect wallet" onClick={() => openApp('connect')}>
+        <Icon name="wallet" size={16} />
+      </button>
+    );
+  }
+  const title = `${conn.wallet.name}\n${conn.address}${lamports !== null ? `\nBalance: ${formatSol(lamports)} SOL` : ''}`;
+  const menu = (e: { clientX: number; clientY: number; preventDefault?: () => void }) =>
+    openContextMenu(e, [
+      { label: 'Open My Wallet', bold: true, onClick: () => openApp('mywallet') },
+      { label: 'Send SOL or Tokens...', onClick: () => openApp('send') },
+      { label: 'Copy Address', onClick: () => void copyText(conn.address) },
+      sep,
+      { label: 'Safely Remove Wallet', onClick: () => void safelyRemoveWallet() },
+    ]);
+  return (
+    <button
+      type="button"
+      className="tray-icon tray-wallet"
+      title={title}
+      aria-label={`Wallet ${conn.address}`}
+      onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        menu({ clientX: r.left, clientY: r.top - 110 });
+      }}
+      onDoubleClick={() => openApp('mywallet')}
+      onContextMenu={menu}
+    >
+      {conn.wallet.icon ? <WalletIcon src={conn.wallet.icon} size={16} /> : <Icon name="wallet" size={16} />}
+    </button>
+  );
+}
+
 function Tray() {
   const muted = useSettings((s) => s.muted);
   const cluster = useSettings((s) => s.cluster);
@@ -91,6 +133,7 @@ function Tray() {
       >
         <Icon name={net.state === 'offline' ? 'network-off' : 'network'} size={16} />
       </button>
+      <WalletTray />
       <button
         type="button"
         className="tray-icon"

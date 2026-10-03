@@ -14,8 +14,18 @@ import { About } from './system/About';
 import { Run } from './system/Run';
 import { MessageBox } from './system/MessageBox';
 import { FileDialog } from './system/FileDialog';
+import { MyWallet } from './wallet/MyWallet';
+import { ConnectWallet } from './wallet/ConnectWallet';
+import { SolExplorer } from './solexplorer/SolExplorer';
+import { Inbox } from './inbox/Inbox';
+import { SendWizard } from './send/SendWizard';
 
 export const APPS: AppDef[] = [
+  { id: 'mywallet', title: 'My Wallet', icon: 'wallet', component: MyWallet, width: 720, height: 500, minWidth: 420, minHeight: 300, aliases: ['wallet', 'mycomputer'] },
+  { id: 'solexplorer', title: 'Solana Explorer', icon: 'explorer-web', component: SolExplorer, width: 760, height: 540, minWidth: 420, minHeight: 300, singleton: true, aliases: ['iexplore', 'explorer.solana', 'browser', 'solexplorer'] },
+  { id: 'inbox', title: 'Inbox - Solana Mail', icon: 'inbox', component: Inbox, width: 760, height: 520, minWidth: 480, minHeight: 320, singleton: true, aliases: ['outlook', 'msimn', 'mail'] },
+  { id: 'send', title: 'Send Wizard', icon: 'send', component: SendWizard, width: 500, height: 380, resizable: false, singleton: true, dialog: true, fitContent: true, aliases: ['transfer'] },
+  { id: 'connect', title: 'Connect Wallet', icon: 'wallet', component: ConnectWallet, width: 380, height: 300, resizable: false, singleton: true, dialog: true, fitContent: true },
   { id: 'notepad', title: 'Untitled - Notepad', icon: 'notepad', component: Notepad, width: 560, height: 400, aliases: ['notepad.exe', 'edit'] },
   { id: 'calc', title: 'Calculator', icon: 'calculator', component: Calculator, width: 260, height: 260, resizable: false, fitContent: true, aliases: ['calculator'] },
   { id: 'cmd', title: 'Command Prompt', icon: 'cmd', component: Cmd, width: 660, height: 400, aliases: ['command', 'terminal', 'solana'] },

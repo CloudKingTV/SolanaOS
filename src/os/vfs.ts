@@ -31,8 +31,12 @@ Things to try:
   * Play a round of Rugsweeper. Don't click the rugs.
   * Change the theme in Control Panel > Display.
 
-SolanaOS starts on Devnet, Solana's test network. Wallet sign-in,
-My Wallet and the Burn Bin's rent reclaim arrive in the next update.
+  * Log on with your wallet (Phantom, Solflare, Backpack...) to use
+    My Wallet, Inbox, the Send Wizard and the Burn Bin's rent reclaim.
+
+SolanaOS starts on Devnet, Solana's test network, where SOL is free.
+Transactions on Mainnet stay off until you allow them in Network
+Settings.
 `;
 
 function seed(): VNode[] {

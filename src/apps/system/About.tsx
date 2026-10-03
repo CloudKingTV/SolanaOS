@@ -21,7 +21,7 @@ export function About({ windowId }: AppProps) {
         <p>
           SolanaOS
           <br />
-          Version {OS_VERSION} (Phase 1: Shell)
+          Version {OS_VERSION} (Phase 2: Wallet)
           <br />
           Connected cluster: {clusterLabel(cluster)}
         </p>

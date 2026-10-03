@@ -2,12 +2,18 @@ import { create } from 'zustand';
 import type { IconName } from '../shell/icons';
 import { closeAll } from './windows';
 import { sounds } from './sound';
+import { disconnectWallet } from './wallet/standard';
 
 export type Phase = 'boot' | 'welcome' | 'loading' | 'desktop' | 'logging-off' | 'shutting-down' | 'off' | 'standby';
 
 export interface User {
   name: string;
   avatar: IconName;
+  /** Set when logged on with a wallet. */
+  address?: string;
+  walletName?: string;
+  /** Wallet-provided icon (data: URI). */
+  walletIcon?: string;
 }
 
 export interface Balloon {
@@ -51,6 +57,7 @@ export function logOn(user: User) {
 
 export function logOff() {
   sounds.shutdown();
+  void disconnectWallet(true);
   useSession.setState({ phase: 'logging-off', startOpen: false, exitDialog: null, balloon: null });
   window.setTimeout(() => {
     closeAll();
@@ -60,6 +67,7 @@ export function logOff() {
 
 export function turnOff(restart = false) {
   sounds.shutdown();
+  void disconnectWallet(true);
   useSession.setState({ phase: 'shutting-down', startOpen: false, exitDialog: null, balloon: null });
   window.setTimeout(() => {
     closeAll();
@@ -88,4 +96,17 @@ export function showBalloon(b: Omit<Balloon, 'id'>) {
 export function hideBalloon(id?: number) {
   const cur = useSession.getState().balloon;
   if (cur && (id === undefined || cur.id === id)) useSession.setState({ balloon: null });
+}
+
+export function shortAddr(a: string) {
+  return `${a.slice(0, 4)}…${a.slice(-4)}`;
+}
+
+export function walletUser(c: { address: string; wallet: { name: string; icon: string } }): User {
+  return { name: shortAddr(c.address), avatar: 'wallet', address: c.address, walletName: c.wallet.name, walletIcon: c.wallet.icon };
+}
+
+/** Swap the current session's user without logging off (wallet connected or removed). */
+export function setUser(user: User) {
+  useSession.setState({ user });
 }

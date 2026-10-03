@@ -973,6 +973,9 @@
   border-top: 6px solid #ffffe1;
   filter: drop-shadow(0 1px 0 #000);
 }
+.balloon-body {
+  overflow-wrap: anywhere;
+}
 .balloon-head {
   display: flex;
   align-items: center;

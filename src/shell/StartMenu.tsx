@@ -4,6 +4,7 @@ import { openApp } from '../os/windows';
 import { openMyDocuments, openFolder } from '../os/shellActions';
 import { MY_DOCUMENTS } from '../os/vfs';
 import { Icon, type IconName } from './icons';
+import { WalletIcon } from './WalletPicker';
 import { MenuList, type MenuItem } from './Menu';
 
 interface Entry {
@@ -15,16 +16,19 @@ interface Entry {
 }
 
 const left: Entry[] = [
-  { icon: 'network-monitor', label: 'Network Monitor', sub: 'Live cluster stats', onClick: () => openApp('netmon'), bold: true },
-  { icon: 'cmd', label: 'Command Prompt', sub: 'Solana CLI', onClick: () => openApp('cmd'), bold: true },
+  { icon: 'explorer-web', label: 'Solana Explorer', sub: 'Browse the chain', onClick: () => openApp('solexplorer'), bold: true },
+  { icon: 'inbox', label: 'Inbox', sub: 'Solana Mail', onClick: () => openApp('inbox'), bold: true },
 ];
 const recent: Entry[] = [
+  { icon: 'send', label: 'Send Wizard', onClick: () => openApp('send') },
+  { icon: 'network-monitor', label: 'Network Monitor', onClick: () => openApp('netmon') },
+  { icon: 'cmd', label: 'Command Prompt', onClick: () => openApp('cmd') },
   { icon: 'notepad', label: 'Notepad', onClick: () => openApp('notepad') },
   { icon: 'calculator', label: 'Calculator', onClick: () => openApp('calc') },
   { icon: 'rugsweeper', label: 'Rugsweeper', onClick: () => openApp('rugsweeper') },
-  { icon: 'display', label: 'Display Properties', onClick: () => openApp('display') },
 ];
 const right: (Entry | 'sep')[] = [
+  { icon: 'wallet', label: 'My Wallet', onClick: () => openApp('mywallet'), bold: true },
   { icon: 'my-documents', label: 'My Documents', onClick: openMyDocuments, bold: true },
   { icon: 'my-pictures', label: 'My Pictures', onClick: () => openFolder(`${MY_DOCUMENTS}\\My Pictures`), bold: true },
   { icon: 'burn-empty', label: 'Burn Bin', onClick: () => openApp('burnbin'), bold: true },
@@ -45,6 +49,17 @@ const allPrograms: MenuItem[] = [
       { label: 'Command Prompt', icon: 'cmd', onClick: () => openApp('cmd') },
       { label: 'Notepad', icon: 'notepad', onClick: () => openApp('notepad') },
       { label: 'Windows Explorer', icon: 'folder-open', onClick: () => openFolder('C:\\') },
+    ],
+  },
+  {
+    label: 'Solana',
+    icon: 'folder',
+    submenu: [
+      { label: 'My Wallet', icon: 'wallet', onClick: () => openApp('mywallet') },
+      { label: 'Solana Explorer', icon: 'explorer-web', onClick: () => openApp('solexplorer') },
+      { label: 'Inbox', icon: 'inbox', onClick: () => openApp('inbox') },
+      { label: 'Send Wizard', icon: 'send', onClick: () => openApp('send') },
+      { label: 'Connect Wallet', icon: 'wallet', onClick: () => openApp('connect') },
     ],
   },
   {
@@ -100,9 +115,12 @@ export function StartMenu() {
     <div className="start-menu" ref={ref} role="menu" aria-label="Start menu">
       <div className="sm-header">
         <span className="sm-avatar">
-          <Icon name={user?.avatar ?? 'avatar'} size={44} />
+          {user?.walletIcon ? <WalletIcon src={user.walletIcon} size={44} /> : <Icon name={user?.avatar ?? 'avatar'} size={44} />}
         </span>
-        <span className="sm-username">{user?.name ?? 'Guest'}</span>
+        <span className="sm-username">
+          {user?.name ?? 'Guest'}
+          {user?.walletName && <small className="sm-wallet">{user.walletName}</small>}
+        </span>
       </div>
       <div className="sm-accent" />
       <div className="sm-body">
