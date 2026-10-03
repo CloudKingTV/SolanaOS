@@ -20,16 +20,17 @@ const left: Entry[] = [
   { icon: 'inbox', label: 'Inbox', sub: 'Solana Mail', onClick: () => openApp('inbox'), bold: true },
 ];
 const recent: Entry[] = [
+  { icon: 'paint', label: 'Mint Paint', onClick: () => openApp('paint') },
+  { icon: 'swap', label: 'Swap', onClick: () => openApp('swap') },
+  { icon: 'stake', label: 'Staking', onClick: () => openApp('staking') },
   { icon: 'send', label: 'Send Wizard', onClick: () => openApp('send') },
   { icon: 'network-monitor', label: 'Network Monitor', onClick: () => openApp('netmon') },
   { icon: 'cmd', label: 'Command Prompt', onClick: () => openApp('cmd') },
-  { icon: 'notepad', label: 'Notepad', onClick: () => openApp('notepad') },
-  { icon: 'calculator', label: 'Calculator', onClick: () => openApp('calc') },
-  { icon: 'rugsweeper', label: 'Rugsweeper', onClick: () => openApp('rugsweeper') },
 ];
 const right: (Entry | 'sep')[] = [
   { icon: 'wallet', label: 'My Wallet', onClick: () => openApp('mywallet'), bold: true },
   { icon: 'my-documents', label: 'My Documents', onClick: openMyDocuments, bold: true },
+  { icon: 'collectibles', label: 'My Collectibles', onClick: () => openApp('collectibles'), bold: true },
   { icon: 'my-pictures', label: 'My Pictures', onClick: () => openFolder(`${MY_DOCUMENTS}\\My Pictures`), bold: true },
   { icon: 'burn-empty', label: 'Burn Bin', onClick: () => openApp('burnbin'), bold: true },
   'sep',
@@ -48,6 +49,8 @@ const allPrograms: MenuItem[] = [
       { label: 'Calculator', icon: 'calculator', onClick: () => openApp('calc') },
       { label: 'Command Prompt', icon: 'cmd', onClick: () => openApp('cmd') },
       { label: 'Notepad', icon: 'notepad', onClick: () => openApp('notepad') },
+      { label: 'Paint', icon: 'paint', onClick: () => openApp('paint') },
+      { label: 'Picture Viewer', icon: 'image', onClick: () => openApp('pictures') },
       { label: 'Windows Explorer', icon: 'folder-open', onClick: () => openFolder('C:\\') },
     ],
   },
@@ -58,14 +61,22 @@ const allPrograms: MenuItem[] = [
       { label: 'My Wallet', icon: 'wallet', onClick: () => openApp('mywallet') },
       { label: 'Solana Explorer', icon: 'explorer-web', onClick: () => openApp('solexplorer') },
       { label: 'Inbox', icon: 'inbox', onClick: () => openApp('inbox') },
+      { label: 'My Collectibles', icon: 'collectibles', onClick: () => openApp('collectibles') },
+      { label: 'Mint Paint', icon: 'paint', onClick: () => openApp('paint') },
       { label: 'Send Wizard', icon: 'send', onClick: () => openApp('send') },
+      { label: 'Stake Wizard', icon: 'stake', onClick: () => openApp('stake') },
+      { label: 'Staking', icon: 'stake', onClick: () => openApp('staking') },
+      { label: 'Swap', icon: 'swap', onClick: () => openApp('swap') },
       { label: 'Connect Wallet', icon: 'wallet', onClick: () => openApp('connect') },
     ],
   },
   {
     label: 'Games',
     icon: 'folder',
-    submenu: [{ label: 'Rugsweeper', icon: 'rugsweeper', onClick: () => openApp('rugsweeper') }],
+    submenu: [
+      { label: 'Rugsweeper', icon: 'rugsweeper', onClick: () => openApp('rugsweeper') },
+      { label: 'Solitaire', icon: 'cards', onClick: () => openApp('solitaire') },
+    ],
   },
   {
     label: 'System Tools',

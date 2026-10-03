@@ -19,6 +19,8 @@ export interface Settings {
   allowMainnetTransactions: boolean;
   /** Wallet to reconnect silently on the next visit. */
   lastWallet: string;
+  /** The user's own Jupiter API key, for swaps (stored only in this browser). */
+  jupiterApiKey: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -33,6 +35,7 @@ export const DEFAULT_SETTINGS: Settings = {
   fastBoot: false,
   allowMainnetTransactions: false,
   lastWallet: '',
+  jupiterApiKey: '',
 };
 
 const STORAGE_KEY = 'solanaos.settings.v1';

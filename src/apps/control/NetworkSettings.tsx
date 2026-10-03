@@ -9,6 +9,7 @@ export function NetworkSettings({ windowId }: AppProps) {
   const [cluster, setCluster] = useState<Cluster>(settings.cluster);
   const [custom, setCustom] = useState(settings.customRpcUrl);
   const [allowMainnet, setAllowMainnet] = useState(settings.allowMainnetTransactions);
+  const [jupKey, setJupKey] = useState(settings.jupiterApiKey);
   const [test, setTest] = useState<{ state: 'idle' | 'testing' | 'ok' | 'fail'; text?: string }>({ state: 'idle' });
 
   const url = cluster === 'custom' ? custom.trim() : RPC_URLS[cluster];
@@ -25,7 +26,7 @@ export function NetworkSettings({ windowId }: AppProps) {
     }
   };
 
-  const apply = () => settings.update({ cluster, customRpcUrl: custom.trim(), allowMainnetTransactions: allowMainnet });
+  const apply = () => settings.update({ cluster, customRpcUrl: custom.trim(), allowMainnetTransactions: allowMainnet, jupiterApiKey: jupKey.trim() });
 
   return (
     <div className="net-settings">
@@ -72,6 +73,17 @@ export function NetworkSettings({ windowId }: AppProps) {
             </small>
           </span>
         </label>
+        <label className="field">
+          <span>Jupiter API key (swaps):</span>
+          <input type="password" value={jupKey} onChange={(e) => setJupKey(e.target.value)} placeholder="Optional" style={{ flex: 1 }} autoComplete="off" />
+        </label>
+        <small className="ns-note">
+          Free from{' '}
+          <a href="https://portal.jup.ag" target="_blank" rel="noreferrer noopener">
+            portal.jup.ag
+          </a>
+          . Stored only in this browser.
+        </small>
       </fieldset>
       <div className="ns-test">
         <button type="button" className="btn" disabled={!customValid || !url || test.state === 'testing'} onClick={() => void runTest()}>

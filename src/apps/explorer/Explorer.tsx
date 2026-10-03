@@ -137,7 +137,7 @@ export function Explorer({ windowId, args }: AppProps) {
 
   const itemMenu = (n: VNode, e: React.MouseEvent) =>
     openContextMenu(e, [
-      { label: n.type === 'dir' ? 'Open' : 'Open with Notepad', bold: true, onClick: () => open(n) },
+      { label: 'Open', bold: true, onClick: () => open(n) },
       ...(n.type === 'dir' ? [{ label: 'Open in New Window', onClick: () => openApp('explorer', { path: n.path }) }] : []),
       sep,
       { label: 'Delete', onClick: deleteSelected },

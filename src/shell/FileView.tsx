@@ -10,6 +10,7 @@ export type ViewMode = 'tiles' | 'icons' | 'details';
 export function iconFor(n: VNode): IconName {
   if (n.type === 'dir') return /my pictures$/i.test(n.path) ? 'my-pictures' : 'folder';
   const ext = extname(displayName(n));
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) return 'image';
   return ext === 'txt' || ext === 'md' || ext === 'log' ? 'file-text' : 'file';
 }
 
@@ -17,6 +18,7 @@ export function typeName(n: VNode): string {
   if (n.type === 'dir') return 'File Folder';
   const ext = extname(displayName(n));
   if (ext === 'txt') return 'Text Document';
+  if (ext === 'png') return 'PNG Image';
   return ext ? `${ext.toUpperCase()} File` : 'File';
 }
 

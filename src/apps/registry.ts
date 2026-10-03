@@ -19,8 +19,24 @@ import { ConnectWallet } from './wallet/ConnectWallet';
 import { SolExplorer } from './solexplorer/SolExplorer';
 import { Inbox } from './inbox/Inbox';
 import { SendWizard } from './send/SendWizard';
+import { Paint } from './paint/Paint';
+import { PictureViewer } from './pictures/PictureViewer';
+import { MintDialog } from './mint/MintDialog';
+import { Collectibles } from './collectibles/Collectibles';
+import { StakeWizard } from './stake/StakeWizard';
+import { Staking } from './stake/Staking';
+import { Swap } from './swap/Swap';
+import { Solitaire } from './solitaire/Solitaire';
 
 export const APPS: AppDef[] = [
+  { id: 'paint', title: 'untitled - Paint', icon: 'paint', component: Paint, width: 760, height: 600, minWidth: 420, minHeight: 360, aliases: ['mspaint', 'mintpaint'] },
+  { id: 'pictures', title: 'Picture Viewer', icon: 'image', component: PictureViewer, width: 620, height: 520, minWidth: 320, minHeight: 260, aliases: ['viewer', 'photos'] },
+  { id: 'mint', title: 'Mint as NFT', icon: 'collectibles', component: MintDialog, width: 520, height: 400, resizable: false, singleton: true, dialog: true, fitContent: true },
+  { id: 'collectibles', title: 'My Collectibles', icon: 'collectibles', component: Collectibles, width: 720, height: 500, minWidth: 420, minHeight: 300, singleton: true, aliases: ['nfts', 'gallery'] },
+  { id: 'stake', title: 'Stake Wizard', icon: 'stake', component: StakeWizard, width: 500, height: 380, resizable: false, singleton: true, dialog: true, fitContent: true },
+  { id: 'staking', title: 'Staking', icon: 'stake', component: Staking, width: 620, height: 400, minWidth: 420, minHeight: 260, singleton: true, aliases: ['stakes'] },
+  { id: 'swap', title: 'Swap', icon: 'swap', component: Swap, width: 440, height: 480, resizable: false, singleton: true, fitContent: true, aliases: ['exchange', 'jupiter'] },
+  { id: 'solitaire', title: 'Solitaire', icon: 'cards', component: Solitaire, width: 640, height: 520, minWidth: 600, minHeight: 440, singleton: true, aliases: ['sol', 'klondike'] },
   { id: 'mywallet', title: 'My Wallet', icon: 'wallet', component: MyWallet, width: 720, height: 500, minWidth: 420, minHeight: 300, aliases: ['wallet', 'mycomputer'] },
   { id: 'solexplorer', title: 'Solana Explorer', icon: 'explorer-web', component: SolExplorer, width: 760, height: 540, minWidth: 420, minHeight: 300, singleton: true, aliases: ['iexplore', 'explorer.solana', 'browser', 'solexplorer'] },
   { id: 'inbox', title: 'Inbox - Solana Mail', icon: 'inbox', component: Inbox, width: 760, height: 520, minWidth: 480, minHeight: 320, singleton: true, aliases: ['outlook', 'msimn', 'mail'] },
