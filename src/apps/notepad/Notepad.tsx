@@ -4,6 +4,9 @@ import { basename, dirname } from '../../os/path';
 import { openApp, requestClose, setCloseGuard, setWindowTitle, type AppProps } from '../../os/windows';
 import { fileDialog, messageBox } from '../../os/dialogs';
 import { MenuBar, sep } from '../../shell/Menu';
+import { useWallet } from '../../os/wallet/standard';
+import { signMessage } from '../../os/wallet/tx';
+import { formatSigned, parseSigned, verifySigned } from '../../os/wallet/signedMessage';
 
 export function Notepad({ windowId, args }: AppProps) {
   const [path, setPath] = useState<string | null>(null);
@@ -124,6 +127,44 @@ export function Notepad({ windowId, args }: AppProps) {
     setCursor({ line: lines.length, col: lines[lines.length - 1].length + 1 });
   };
 
+  const walletConnected = useWallet((s) => !!s.connection);
+
+  const signText = async () => {
+    const message = text.replace(/\r\n/g, '\n');
+    if (!message.trim()) {
+      void messageBox({ title: 'Sign Message', icon: 'info', message: 'Type the message you want to sign first.', owner: windowId });
+      return;
+    }
+    try {
+      const { address, signature } = await signMessage(message);
+      setText(formatSigned(message, address, signature));
+    } catch (e) {
+      void messageBox({ title: 'Sign Message', icon: 'error', message: e instanceof Error ? e.message : String(e), owner: windowId });
+    }
+  };
+
+  const verifyText = async () => {
+    const block = parseSigned(text);
+    if (!block) {
+      void messageBox({
+        title: 'Verify Signature',
+        icon: 'info',
+        message: 'No signed message found. Paste a block that starts with -----BEGIN SOLANA SIGNED MESSAGE-----.',
+        owner: windowId,
+      });
+      return;
+    }
+    const ok = await verifySigned(block);
+    void messageBox({
+      title: 'Verify Signature',
+      icon: ok ? 'info' : 'error',
+      message: ok
+        ? `Good signature.\n\nThis message was signed by:\n${block.address}`
+        : `BAD signature.\n\nThis message was NOT signed by ${block.address}, or it was changed after signing.`,
+      owner: windowId,
+    });
+  };
+
   const timeDate = () => {
     const d = new Date();
     insert(`${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} ${d.toLocaleDateString('en-US')}`);
@@ -140,6 +181,9 @@ export function Notepad({ windowId, args }: AppProps) {
               { label: 'Open...', shortcut: 'Ctrl+O', onClick: () => void open() },
               { label: 'Save', shortcut: 'Ctrl+S', onClick: () => void save() },
               { label: 'Save As...', onClick: () => void saveAs() },
+              sep,
+              { label: 'Sign Message with Wallet...', disabled: !walletConnected, onClick: () => void signText() },
+              { label: 'Verify Signature', onClick: () => void verifyText() },
               sep,
               { label: 'Exit', onClick: () => void requestClose(windowId) },
             ],

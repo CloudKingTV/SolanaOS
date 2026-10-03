@@ -8,6 +8,7 @@ export function NetworkSettings({ windowId }: AppProps) {
   const settings = useSettings();
   const [cluster, setCluster] = useState<Cluster>(settings.cluster);
   const [custom, setCustom] = useState(settings.customRpcUrl);
+  const [allowMainnet, setAllowMainnet] = useState(settings.allowMainnetTransactions);
   const [test, setTest] = useState<{ state: 'idle' | 'testing' | 'ok' | 'fail'; text?: string }>({ state: 'idle' });
 
   const url = cluster === 'custom' ? custom.trim() : RPC_URLS[cluster];
@@ -24,13 +25,13 @@ export function NetworkSettings({ windowId }: AppProps) {
     }
   };
 
-  const apply = () => settings.update({ cluster, customRpcUrl: custom.trim() });
+  const apply = () => settings.update({ cluster, customRpcUrl: custom.trim(), allowMainnetTransactions: allowMainnet });
 
   return (
     <div className="net-settings">
       <div className="ns-head">
         <Icon name="globe" size={32} />
-        <p>Choose which Solana cluster SolanaOS talks to. Everything in this release is read-only.</p>
+        <p>Choose which Solana cluster SolanaOS talks to. Devnet is the default. Its SOL is free and has no value.</p>
       </div>
       <fieldset className="group">
         <legend>Cluster</legend>
@@ -58,6 +59,19 @@ export function NetworkSettings({ windowId }: AppProps) {
         <p className="ns-note">
           A custom URL is stored only in this browser. An API key in the URL is visible to anyone using this browser profile.
         </p>
+      </fieldset>
+      <fieldset className="group ns-danger">
+        <legend>Transactions</legend>
+        <label className="check">
+          <input type="checkbox" checked={allowMainnet} onChange={(e) => setAllowMainnet(e.target.checked)} />
+          <span>
+            <b>Allow transactions on Mainnet</b>
+            <small>
+              When this is off, SolanaOS can only send, burn or close accounts on Devnet. Turn it on only if you understand
+              that Mainnet transactions move real funds and can't be undone.
+            </small>
+          </span>
+        </label>
       </fieldset>
       <div className="ns-test">
         <button type="button" className="btn" disabled={!customValid || !url || test.state === 'testing'} onClick={() => void runTest()}>

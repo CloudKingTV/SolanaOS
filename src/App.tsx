@@ -12,6 +12,9 @@ import { Taskbar } from './shell/Taskbar';
 import { ExitDialogs } from './shell/ExitDialogs';
 import { ContextMenuHost } from './shell/Menu';
 import { Screensaver } from './shell/Screensaver';
+import { setExternalDisconnectHandler, useWallet } from './os/wallet/standard';
+import { refreshPortfolio } from './os/wallet/portfolio';
+import { handleExternalDisconnect } from './os/wallet/actions';
 
 function DesktopShell({ visible }: { visible: boolean }) {
   const exitDialog = useSession((s) => s.exitDialog);
@@ -28,6 +31,19 @@ function DesktopShell({ visible }: { visible: boolean }) {
     const t = setInterval(() => void checkNetwork(), 30_000);
     return () => clearInterval(t);
   }, [visible]);
+
+  // Keep wallet holdings fresh while the desktop is up.
+  const walletAddress = useWallet((s) => s.connection?.address);
+  const cluster = useSettings((s) => s.cluster);
+  const customRpc = useSettings((s) => s.customRpcUrl);
+  useEffect(() => {
+    if (!visible) return;
+    setExternalDisconnectHandler(handleExternalDisconnect);
+    void refreshPortfolio();
+    if (!walletAddress) return;
+    const t = setInterval(() => void refreshPortfolio(), 30_000);
+    return () => clearInterval(t);
+  }, [visible, walletAddress, cluster, customRpc]);
 
   // Greet once per logon when the network first answers.
   useEffect(() => {

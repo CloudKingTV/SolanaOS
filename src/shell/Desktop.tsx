@@ -5,6 +5,8 @@ import { openApp } from '../os/windows';
 import { openMyDocuments, openPath } from '../os/shellActions';
 import { messageBox } from '../os/dialogs';
 import { emptyBurnBin } from '../apps/burnbin/actions';
+import { useTokenBinItems } from '../apps/burnbin/TokenBin';
+import { useWallet } from '../os/wallet/standard';
 import { Icon, type IconName } from './icons';
 import { openContextMenu, sep, type MenuItem } from './Menu';
 
@@ -45,7 +47,9 @@ function fileIcon(path: string, isDir: boolean): IconName {
 
 export function Desktop() {
   const nodes = useVfs((s) => s.nodes);
-  const binFull = recycled(nodes).length > 0;
+  const tokenBin = useTokenBinItems().length;
+  const binFull = recycled(nodes).length > 0 || tokenBin > 0;
+  const walletConnected = useWallet((s) => !!s.connection);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [renaming, setRenaming] = useState<string | null>(null);
   const [positions, setPositions] = useState(loadPositions);
@@ -70,6 +74,16 @@ export function Desktop() {
   const items: DeskItem[] = useMemo(() => {
     const sys: DeskItem[] = [
       {
+        key: 'sys:wallet',
+        label: 'My Wallet',
+        icon: 'wallet',
+        open: () => openApp('mywallet'),
+        menu: () => [
+          { label: 'Open', bold: true, onClick: () => openApp('mywallet') },
+          { label: walletConnected ? 'Send...' : 'Connect Wallet...', onClick: () => openApp(walletConnected ? 'send' : 'connect') },
+        ],
+      },
+      {
         key: 'sys:docs',
         label: 'My Documents',
         icon: 'my-documents',
@@ -84,8 +98,26 @@ export function Desktop() {
         dropTarget: true,
         menu: () => [
           { label: 'Open', bold: true, onClick: () => openApp('burnbin') },
-          { label: 'Empty Burn Bin', disabled: !binFull, onClick: () => void emptyBurnBin() },
+          {
+            label: 'Empty Burn Bin',
+            disabled: !binFull,
+            onClick: () => (tokenBin ? openApp('burnbin', { view: 'tokens' }) : void emptyBurnBin()),
+          },
         ],
+      },
+      {
+        key: 'sys:solexplorer',
+        label: 'Solana Explorer',
+        icon: 'explorer-web',
+        open: () => openApp('solexplorer'),
+        menu: () => [{ label: 'Open', bold: true, onClick: () => openApp('solexplorer') }],
+      },
+      {
+        key: 'sys:inbox',
+        label: 'Inbox',
+        icon: 'inbox',
+        open: () => openApp('inbox'),
+        menu: () => [{ label: 'Open', bold: true, onClick: () => openApp('inbox') }],
       },
       {
         key: 'sys:netmon',
@@ -124,7 +156,7 @@ export function Desktop() {
       ],
     }));
     return [...sys, ...files];
-  }, [nodes, binFull]);
+  }, [nodes, binFull, tokenBin, walletConnected]);
 
   // Assign grid cells: saved position if free, otherwise next free cell (column-major, like XP).
   const layout = useMemo(() => {

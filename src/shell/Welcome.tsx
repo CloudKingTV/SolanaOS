@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { GUEST, logOn, setPhase, turnOff, useSession } from '../os/session';
+import { GUEST, logOn, setPhase, turnOff, useSession, walletUser } from '../os/session';
+import { WalletPicker } from './WalletPicker';
 import { Icon, SolanaLogo } from './icons';
 
 function Brand() {
@@ -16,7 +17,6 @@ function Brand() {
 /** The "To begin, click your user name" logon screen. */
 export function Welcome() {
   const phase = useSession((s) => s.phase);
-  const [walletNote, setWalletNote] = useState(false);
   const [confirmOff, setConfirmOff] = useState(false);
   const guestRef = useRef<HTMLButtonElement>(null);
 
@@ -60,20 +60,10 @@ export function Welcome() {
             </span>
             <span className="user-tile-text">
               <span className="user-tile-name">Guest</span>
-              <span className="user-tile-sub">Read-only · Devnet</span>
+              <span className="user-tile-sub">Look around without a wallet (read-only)</span>
             </span>
           </button>
-          <button type="button" className="user-tile" onClick={() => setWalletNote(true)}>
-            <span className="user-tile-pic">
-              <Icon name="wallet" size={48} />
-            </span>
-            <span className="user-tile-text">
-              <span className="user-tile-name">Connect Wallet</span>
-              <span className="user-tile-sub">
-                {walletNote ? 'Wallet sign-in arrives in the next update. Log on as Guest for now.' : 'Phantom, Solflare, Backpack'}
-              </span>
-            </span>
-          </button>
+          <WalletPicker variant="logon" onConnected={(c) => logOn(walletUser(c))} />
         </div>
       </div>
       <div className="welcome-band bottom">

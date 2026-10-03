@@ -15,6 +15,10 @@ import {
   shortAddress,
 } from '../../os/solana/rpc';
 import { OS_VERSION } from '../system/version';
+import { useWallet } from '../../os/wallet/standard';
+import { airdrop } from '../../os/wallet/airdrop';
+import { getTokenAccounts, formatAmount } from '../../os/solana/rpc';
+import { getTokenMetadata } from '../../os/solana/metadata';
 
 export interface Shell {
   cwd: string;
@@ -42,7 +46,8 @@ EXIT     Quits the Command Prompt.
 MD       Creates a directory.
 PING     Measures round-trip time to the Solana RPC endpoint.
 REN      Renames a file or files.
-SOLANA   Solana CLI (read-only). Type "solana help" for commands.
+SOLANA   Solana CLI. Type "solana help" for commands.
+SPL-TOKEN  Token commands: "spl-token accounts".
 START    Starts a program, e.g. START notepad.
 TIME     Displays the time.
 TITLE    Sets the window title.
@@ -56,7 +61,9 @@ USAGE:
     solana <SUBCOMMAND>
 
 SUBCOMMANDS:
-    balance <ADDRESS>       Get the balance of an account
+    address                 Show your connected wallet's address
+    airdrop <SOL> [ADDRESS] Request Devnet SOL (rate-limited faucet)
+    balance [ADDRESS]       Get the balance of an account (default: your wallet)
     block-height            Get the current block height
     cluster-version         Get the version of the cluster entrypoint
     config get              Show the current RPC configuration
@@ -65,9 +72,10 @@ SUBCOMMANDS:
     epoch-info              Get information about the current epoch
     slot                    Get the current slot
     transaction-count       Get the current transaction count
+    transfer <TO> <SOL>     Open the Send Wizard to send SOL
     validators              Show summary information about the current validators
 
-Coming in Phase 2 (wallet sign-in): address, airdrop, transfer`;
+Also: spl-token accounts [ADDRESS]   List token balances`;
 
 /** Split a command line into words, honoring double quotes. */
 export function tokenize(line: string): string[] {
@@ -111,7 +119,7 @@ async function solana(args: string[], sh: Shell) {
     case 'config': {
       const action = (rest[0] ?? '').toLowerCase();
       if (action === 'get') {
-        sh.print(`Config File: C:\\SolanaOS\\config.yml\nRPC URL: ${rpcUrlFor(s)}\nCluster: ${clusterLabel(s.cluster)}\nKeypair Path: (none — wallet sign-in arrives in Phase 2)\nCommitment: confirmed`);
+        sh.print(`Config File: C:\\SolanaOS\\config.yml\nRPC URL: ${rpcUrlFor(s)}\nCluster: ${clusterLabel(s.cluster)}\nWallet: ${useWallet.getState().connection ? `${useWallet.getState().connection!.wallet.name} (${useWallet.getState().connection!.address})` : '(none connected)'}\nCommitment: confirmed`);
         return;
       }
       if (action === 'set') {
@@ -163,7 +171,7 @@ async function solana(args: string[], sh: Shell) {
       sh.print(String(await rpc<number>('getTransactionCount')));
       return;
     case 'balance': {
-      const addr = rest[0];
+      const addr = rest[0] ?? myAddress();
       if (!addr) {
         sh.print('error: no wallet connected. Pass an address: solana balance <ADDRESS>');
         return;
@@ -173,6 +181,41 @@ async function solana(args: string[], sh: Shell) {
         return;
       }
       sh.print(`${formatSol(await getBalance(addr), 9)} SOL`);
+      return;
+    }
+    case 'address': {
+      const addr = myAddress();
+      sh.print(addr ?? 'error: no wallet connected. Log on with a wallet, or click the wallet icon in the tray.');
+      return;
+    }
+    case 'airdrop': {
+      const sol = Number(rest[0]);
+      const addr = rest[1] ?? myAddress();
+      if (!Number.isFinite(sol) || sol <= 0 || sol > 5) {
+        sh.print('error: usage: solana airdrop <SOL (max 5)> [ADDRESS]');
+        return;
+      }
+      if (!addr || !isLikelyAddress(addr)) {
+        sh.print('error: no wallet connected. Pass an address: solana airdrop 1 <ADDRESS>');
+        return;
+      }
+      sh.print(`Requesting airdrop of ${sol} SOL`);
+      const sig = await airdrop(addr, sol);
+      sh.print(`\nSignature: ${sig}\n\n${formatSol(await getBalance(addr), 9)} SOL`);
+      return;
+    }
+    case 'transfer': {
+      const [to, amount] = rest;
+      if (!to || !amount) {
+        sh.print('error: usage: solana transfer <RECIPIENT> <SOL>');
+        return;
+      }
+      if (!myAddress()) {
+        sh.print('error: no wallet connected.');
+        return;
+      }
+      openApp('send', { to, amount });
+      sh.print('Opened the Send Wizard. Review the transfer there and approve it in your wallet.');
       return;
     }
     case 'validators': {
@@ -196,14 +239,35 @@ async function solana(args: string[], sh: Shell) {
       );
       return;
     }
-    case 'address':
-    case 'airdrop':
-    case 'transfer':
-    case 'pay':
-      sh.print(`error: "${sub}" needs a connected wallet. Wallet sign-in arrives in the next SolanaOS update.`);
-      return;
     default:
       sh.print(`error: Found argument '${sub}' which wasn't expected. Type "solana help".`);
+  }
+}
+
+const myAddress = () => useWallet.getState().connection?.address ?? null;
+
+async function splToken(args: string[], sh: Shell) {
+  const [sub, addrArg] = args;
+  if ((sub ?? '').toLowerCase() !== 'accounts') {
+    sh.print('usage: spl-token accounts [ADDRESS]');
+    return;
+  }
+  const addr = addrArg ?? myAddress();
+  if (!addr || !isLikelyAddress(addr)) {
+    sh.print('error: no wallet connected. Pass an address: spl-token accounts <ADDRESS>');
+    return;
+  }
+  const accounts = await getTokenAccounts(addr);
+  if (!accounts.length) {
+    sh.print('None');
+    return;
+  }
+  const meta = await getTokenMetadata(accounts.map((a) => ({ mint: a.mint, programId: a.programId })));
+  sh.print(['Token                                         Balance', '-'.repeat(62)].join('\n'));
+  for (const a of accounts) {
+    const m = meta.get(a.mint);
+    const name = m?.symbol ? `${m.symbol} (${shortAddress(a.mint)})` : a.mint;
+    sh.print(`${pad(name, 45)} ${formatAmount(a.amount, a.decimals)}`);
   }
 }
 
@@ -377,6 +441,9 @@ export async function execute(line: string, sh: Shell): Promise<void> {
         return;
       case 'ping':
         await ping(args, sh);
+        return;
+      case 'spl-token':
+        await splToken(args, sh);
         return;
       default: {
         const app = findAppByAlias(cmd);

@@ -7,9 +7,12 @@ import { Icon } from '../../shell/icons';
 import { MenuBar, openContextMenu, sep } from '../../shell/Menu';
 import { FileView } from '../../shell/FileView';
 import { emptyBurnBin } from './actions';
+import { TokenBin, useTokenBinItems } from './TokenBin';
 
-export function BurnBin({ windowId }: AppProps) {
+export function BurnBin({ windowId, args }: AppProps) {
   const nodes = useVfs((s) => s.nodes);
+  const tokenItems = useTokenBinItems();
+  const [view, setView] = useState<'files' | 'tokens'>(args.view === 'files' ? 'files' : args.view === 'tokens' || tokenItems.length ? 'tokens' : 'files');
   const items = recycled(nodes);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const sel = items.filter((n) => selected.has(keyOf(n.path)));
@@ -68,7 +71,7 @@ export function BurnBin({ windowId }: AppProps) {
       <div className="explorer-main">
         <aside className="task-pane">
           <section className="tp-section">
-            <h3>Burn Bin Tasks</h3>
+            <h3>File Tasks</h3>
             <div className="tp-body">
               <button type="button" disabled={!items.length} onClick={() => void emptyBurnBin(windowId)}>
                 <Icon name="burn-full" size={16} /> Empty the Burn Bin
@@ -79,15 +82,20 @@ export function BurnBin({ windowId }: AppProps) {
             </div>
           </section>
           <section className="tp-section">
-            <h3>Coming in Phase 2</h3>
-            <div className="tp-body tp-details">
-              <span>
-                Drag unwanted tokens and spam NFTs here to close their accounts and reclaim the SOL rent deposit
-                (about 0.002 SOL each).
-              </span>
+            <h3>View</h3>
+            <div className="tp-body">
+              <button type="button" className={view === 'tokens' ? 'active' : ''} onClick={() => setView('tokens')}>
+                <Icon name="coin" size={16} /> Token accounts ({tokenItems.length})
+              </button>
+              <button type="button" className={view === 'files' ? 'active' : ''} onClick={() => setView('files')}>
+                <Icon name="file-text" size={16} /> Files ({items.length})
+              </button>
             </div>
           </section>
         </aside>
+        {view === 'tokens' ? (
+          <TokenBin windowId={windowId} />
+        ) : (
         <FileView
           items={items}
           selected={selected}
@@ -107,9 +115,10 @@ export function BurnBin({ windowId }: AppProps) {
           extraColumns={[{ label: 'Original Location', value: (n) => (n.origPath ? dirname(n.origPath) : '') }]}
           emptyText="The Burn Bin is empty."
         />
+        )}
       </div>
       <div className="status-bar">
-        <span>{items.length} object(s)</span>
+        <span>{view === 'tokens' ? `${tokenItems.length} token account(s)` : `${items.length} object(s)`}</span>
       </div>
     </div>
   );
