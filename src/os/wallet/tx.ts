@@ -116,6 +116,20 @@ export async function signAndSend(instructions: Instruction[]): Promise<string> 
   return sig;
 }
 
+/** Sign raw bytes with the wallet (used for Irys uploads). */
+export async function signBytes(message: Uint8Array): Promise<Uint8Array> {
+  const conn = useWallet.getState().connection;
+  if (!conn) throw new WalletError('Connect a wallet first.');
+  const f = feature<SignMessageFeature>(conn.wallet, SIGN_MESSAGE);
+  if (!f) throw new WalletError(`${conn.wallet.name} doesn't support signing messages, which uploads need.`);
+  try {
+    const [out] = await f.signMessage({ account: conn.account, message });
+    return out.signature;
+  } catch (e) {
+    throw friendly(e);
+  }
+}
+
 export async function signMessage(text: string): Promise<{ address: string; signature: string }> {
   const conn = useWallet.getState().connection;
   if (!conn) throw new WalletError('Connect a wallet first.');

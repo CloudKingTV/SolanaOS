@@ -460,6 +460,74 @@ const icons = {
       {solanaMark(u, 13.3, 23.4, 0.22)}
     </>
   ),
+  paint: (u) => (
+    <>
+      <defs>
+        {lg(u('pp'), [['0', '#ffe9b0'], ['1', '#d9a55a']], 1, 1)}
+        {lg(u('pb'), [['0', '#c9a06a'], ['1', '#7a4f1d']], 1, 0)}
+      </defs>
+      <path d="M16 4C8 4 3 9 3 15c0 5 4 8 8 8 2 0 2-2 2-3s1-2 3-2h4c5 0 9-3 9-7 0-4-6-7-13-7z" fill={`url(#${u('pp')})`} stroke="#7a5420" />
+      <circle cx="9" cy="11" r="2" fill="#9945FF" />
+      <circle cx="15" cy="8" r="2" fill="#14F195" />
+      <circle cx="21" cy="9" r="2" fill="#e4502a" />
+      <circle cx="24" cy="14" r="2" fill="#2f6fdc" />
+      <path d="M17 28l10-13 2.2 1.6-10 13-3 1z" fill={`url(#${u('pb')})`} stroke="#4a2f10" strokeWidth="0.8" />
+      <path d="M16 30.5l1-3 2.2 1.6z" fill="#1b1036" />
+    </>
+  ),
+  image: (u) => (
+    <>
+      {page(u, false)}
+      <rect x="9" y="12" width="14" height="13" fill="#bfe9ff" stroke="#6b7a99" strokeWidth="0.8" />
+      <path d="M9 25l4.5-6 3 3.5 2.5-2.5 4 5z" fill="#3fbf6a" />
+      <circle cx="19.5" cy="15.5" r="1.6" fill="#f5b400" />
+    </>
+  ),
+  collectibles: (u) => (
+    <>
+      <defs>{lg(u('cl'), [['0', '#9945FF'], ['1', '#14F195']], 1, 1)}</defs>
+      <rect x="9" y="3" width="20" height="20" rx="2" fill="#fff" stroke="#6b5aa0" transform="rotate(8 19 13)" />
+      <rect x="3" y="8" width="20" height="20" rx="2" fill="#fff" stroke="#4a3a80" />
+      <rect x="5" y="10" width="16" height="16" fill={`url(#${u('cl')})`} />
+      <circle cx="13" cy="16" r="3.5" fill="#fff" opacity="0.85" />
+      <path d="M8 24c1-3 3-4 5-4s4 1 5 4z" fill="#fff" opacity="0.85" />
+    </>
+  ),
+  stake: (u) => (
+    <>
+      <defs>
+        <radialGradient id={u('st')} cx="0.35" cy="0.3" r="0.8">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.4" stopColor="#9ff5cf" />
+          <stop offset="1" stopColor="#0d8a50" />
+        </radialGradient>
+      </defs>
+      <ellipse cx="13" cy="25" rx="10" ry="3.5" fill="#0b6b46" />
+      <ellipse cx="13" cy="22" rx="10" ry="3.5" fill={`url(#${u('st')})`} stroke="#0b6b46" />
+      <ellipse cx="13" cy="18" rx="10" ry="3.5" fill={`url(#${u('st')})`} stroke="#0b6b46" />
+      <ellipse cx="13" cy="14" rx="10" ry="3.5" fill={`url(#${u('st')})`} stroke="#0b6b46" />
+      <path d="M24 16V5M20 9l4-4 4 4" fill="none" stroke="#6a2fe0" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  swap: (u) => (
+    <>
+      <defs>
+        {lg(u('sa'), [['0', '#b58cff'], ['1', '#5a1fc9']])}
+        {lg(u('sb'), [['0', '#7af0c0'], ['1', '#0d8a50']])}
+      </defs>
+      <path d="M4 11h17V6l8 7-8 7v-5H4z" fill={`url(#${u('sa')})`} stroke="#2e1470" strokeLinejoin="round" />
+      <path d="M28 21H11v-5l-8 7 8 7v-5h17z" fill={`url(#${u('sb')})`} stroke="#0b5a32" strokeLinejoin="round" transform="translate(0 -2)" />
+    </>
+  ),
+  cards: (u) => (
+    <>
+      <defs>{lg(u('cb'), [['0', '#9945FF'], ['1', '#14F195']], 1, 1)}</defs>
+      <rect x="11" y="3" width="17" height="24" rx="2" fill={`url(#${u('cb')})`} stroke="#2e1470" transform="rotate(12 19 15)" />
+      <rect x="4" y="5" width="17" height="24" rx="2" fill="#fff" stroke="#333" />
+      <text x="7" y="14" fontSize="8" fontWeight="bold" fill="#c6161b" fontFamily="Georgia, serif">A</text>
+      <path d="M12.5 17c-2-3-5-1-3.5 1.5L12.5 22l3.5-3.5c1.5-2.5-1.5-4.5-3.5-1.5z" fill="#c6161b" />
+    </>
+  ),
 } satisfies Record<string, Draw>;
 
 export type IconName = keyof typeof icons;

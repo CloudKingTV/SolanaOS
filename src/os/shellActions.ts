@@ -1,4 +1,4 @@
-import { keyOf, normalize, resolve } from './path';
+import { extname, keyOf, normalize, resolve } from './path';
 import { stat, MY_DOCUMENTS, RECYCLER, DESKTOP_DIR } from './vfs';
 import { findAppByAlias, openApp } from './windows';
 import { messageBox } from './dialogs';
@@ -19,8 +19,9 @@ export function openPath(path: string, owner?: string): boolean {
     openFolder(n.path);
     return true;
   }
-  // Every file in the Phase 1 file system is plain text, so Notepad opens them all.
-  openApp('notepad', { path: n.path });
+  // Pictures open in Picture Viewer; everything else is plain text.
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(extname(n.path))) openApp('pictures', { path: n.path });
+  else openApp('notepad', { path: n.path });
   return true;
 }
 

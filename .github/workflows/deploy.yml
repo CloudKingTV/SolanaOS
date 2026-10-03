@@ -11,9 +11,10 @@ permissions:
   pages: write
   id-token: write
 
+# PR runs supersede each other; runs on main queue so a deploy is never cancelled midway.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:

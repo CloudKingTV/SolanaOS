@@ -1,7 +1,7 @@
 {
   "name": "solanaos",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "A Windows XP-inspired desktop OS for Solana, running in the browser.",
   "scripts": {
@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@solana-program/stake": "^0.10.0",
     "@solana-program/system": "^0.15.0",
     "@solana-program/token": "^0.17.0",
     "@solana/kit": "^8.4.0",

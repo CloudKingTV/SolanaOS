@@ -42,6 +42,7 @@ function savePositions(p: Record<string, { col: number; row: number }>) {
 
 function fileIcon(path: string, isDir: boolean): IconName {
   if (isDir) return 'folder';
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(extname(path))) return 'image';
   return extname(path) === 'txt' || extname(path) === 'md' ? 'file-text' : 'file';
 }
 
@@ -120,18 +121,25 @@ export function Desktop() {
         menu: () => [{ label: 'Open', bold: true, onClick: () => openApp('inbox') }],
       },
       {
-        key: 'sys:netmon',
-        label: 'Network Monitor',
-        icon: 'network-monitor',
-        open: () => openApp('netmon'),
-        menu: () => [{ label: 'Open', bold: true, onClick: () => openApp('netmon') }],
+        key: 'sys:paint',
+        label: 'Mint Paint',
+        icon: 'paint',
+        open: () => openApp('paint'),
+        menu: () => [{ label: 'Open', bold: true, onClick: () => openApp('paint') }],
       },
       {
-        key: 'sys:cmd',
-        label: 'Command Prompt',
-        icon: 'cmd',
-        open: () => openApp('cmd'),
-        menu: () => [{ label: 'Open', bold: true, onClick: () => openApp('cmd') }],
+        key: 'sys:collectibles',
+        label: 'My Collectibles',
+        icon: 'collectibles',
+        open: () => openApp('collectibles'),
+        menu: () => [{ label: 'Open', bold: true, onClick: () => openApp('collectibles') }],
+      },
+      {
+        key: 'sys:solitaire',
+        label: 'Solitaire',
+        icon: 'cards',
+        open: () => openApp('solitaire'),
+        menu: () => [{ label: 'Play', bold: true, onClick: () => openApp('solitaire') }],
       },
       {
         key: 'sys:rugsweeper',

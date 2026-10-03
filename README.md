@@ -6,6 +6,19 @@ SolanaOS recreates the look and feel of an early-2000s desktop: a BIOS boot scre
 
 > SolanaOS is an independent community project. It is not affiliated with or endorsed by the Solana Foundation or Microsoft.
 
+## What's in Phase 3 (apps)
+
+| App | What it does |
+| --- | --- |
+| **Mint Paint** (Paint) | Pencil, brush, airbrush, eraser, fill, color picker, line, rectangle and ellipse; zoom, undo/redo; saves PNGs to My Pictures. **File → Mint as NFT** uploads the picture and its metadata to permanent Arweave storage through [Irys](https://irys.xyz) (free under 100 KiB, signed with your wallet) and mints a [Metaplex Core](https://developers.metaplex.com/core) NFT for about 0.002 SOL. |
+| **My Collectibles** | Your NFTs (Token Metadata and Core) as thumbnails, with a slide show. |
+| **Picture Viewer** | The Windows Picture and Fax Viewer: next/previous, best fit or actual size, rotate, slide show, edit in Paint. |
+| **Stake Wizard** and **Staking** | Pick a validator by commission and stake share, stake SOL (the stake account is derived from your wallet, so it's one approval), then unstake and withdraw later. |
+| **Swap** | Token swaps routed by [Jupiter](https://jup.ag), with price impact, minimum received and route. Mainnet only; needs your own free API key from [portal.jup.ag](https://portal.jup.ag), entered in Network Settings. |
+| **Solitaire** | Klondike with draw one or draw three, scoring, undo and the bouncing-cards finale. |
+
+Mint Paint's upload format (ANS-104 data items) and the Core instruction encoding are implemented without the Irys and Umi SDKs. Tests check them byte for byte against vectors produced by `@irys/bundles` and `@metaplex-foundation/mpl-core`.
+
 ## What's in Phase 2 (wallet)
 
 Log on with your own wallet. SolanaOS uses the [Wallet Standard](https://github.com/wallet-standard/wallet-standard), so Phantom, Solflare, Backpack and other Solana wallets show up on the logon screen automatically. SolanaOS never sees private keys; every transaction is shown and approved in your wallet.
@@ -57,8 +70,8 @@ SolanaOS starts on **devnet**. To use your own RPC provider (for example Helius 
 ## Roadmap
 
 1. **Shell**: done.
-2. **Chain integration**: this release.
-3. **Power apps**: Mint Paint (draw and mint compressed NFTs), swaps, Stake Wizard, My Collectibles, Solamp, SolMessenger, Solitaire, Program Files (sandboxed dApps).
+2. **Chain integration**: done.
+3. **Power apps**: this release. Still to come: Solamp (media player), SolMessenger (wallet-to-wallet chat) and Program Files (sandboxed dApps).
 4. **Ship as an OS**: installable web app, Tauri desktop build, and a bootable Linux image that starts straight into SolanaOS.
 
 ## Development
@@ -76,7 +89,9 @@ The app is a static Vite + React + TypeScript site with no backend.
 ```
 src/
   os/        window manager, virtual file system, settings, sounds, Solana RPC
-  os/wallet/ Wallet Standard connection, signing, holdings, burn and send builders
+  os/wallet/ Wallet Standard connection, signing, holdings, burn, send and stake builders
+  os/nft/    Irys uploads (ANS-104) and Metaplex Core minting
+  os/swap/   Jupiter client
   shell/     boot, logon, desktop, windows, taskbar, Start menu, icons, wallpapers
   apps/      one folder per app; registered in apps/registry.ts
   styles/    theme tokens and XP-style chrome

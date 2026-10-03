@@ -227,6 +227,15 @@ export function MyWallet({ windowId, args }: AppProps) {
               <button type="button" onClick={() => openApp('inbox')}>
                 <Icon name="inbox" size={16} /> Inbox
               </button>
+              <button type="button" onClick={() => openApp('collectibles')}>
+                <Icon name="collectibles" size={16} /> My Collectibles
+              </button>
+              <button type="button" onClick={() => openApp('staking')}>
+                <Icon name="stake" size={16} /> Staking
+              </button>
+              <button type="button" onClick={() => openApp('swap')}>
+                <Icon name="swap" size={16} /> Swap
+              </button>
             </div>
           </section>
           <section className="tp-section">
