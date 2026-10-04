@@ -1,5 +1,5 @@
 // Minimal read-only JSON-RPC client. Phase 2 moves signing flows to @solana/kit + Wallet Standard.
-import { useSettings, rpcUrlFor } from '../settings';
+import { endpointHost, endpointsFor, markEndpointFailed, useSettings } from '../settings';
 
 export const LAMPORTS_PER_SOL = 1_000_000_000;
 
@@ -14,17 +14,56 @@ export class RpcError extends Error {
 
 let nextId = 1;
 
+/** HTTP statuses that mean "try another endpoint" rather than "the request was wrong". */
+const RETRYABLE = new Set([401, 403, 408, 425, 429, 500, 502, 503, 504]);
+
+function httpMessage(status: number, host: string): string {
+  if (status === 403) return `HTTP 403: ${host} refuses requests from websites`;
+  if (status === 429) return `HTTP 429: ${host} is rate-limiting requests`;
+  return `HTTP ${status} from ${host}`;
+}
+
+/** Send a JSON-RPC request, falling back through `endpoints` on refusals and network errors. */
+export async function rpcVia<T>(endpoints: string[], method: string, params: unknown[] = []): Promise<T> {
+  let last: unknown = null;
+  for (const endpoint of endpoints) {
+    const host = endpointHost(endpoint);
+    let res: Response;
+    try {
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: nextId++, method, params }),
+      });
+    } catch (e) {
+      // Network failure, or the server doesn't allow requests from websites (CORS).
+      last = new RpcError(`Couldn't reach ${host}${e instanceof Error && e.message ? ` (${e.message})` : ''}`);
+      markEndpointFailed(endpoint);
+      continue;
+    }
+    if (!res.ok) {
+      last = new RpcError(httpMessage(res.status, host), res.status);
+      if (RETRYABLE.has(res.status)) {
+        markEndpointFailed(endpoint);
+        continue;
+      }
+      throw last;
+    }
+    const body = await res.json();
+    if (body.error) throw new RpcError(body.error.message ?? 'RPC error', body.error.code);
+    return body.result as T;
+  }
+  if (endpoints.length > 1) {
+    const reason = last instanceof Error ? last.message : String(last);
+    throw new RpcError(
+      `None of the free Mainnet servers answered (last: ${reason}). Add a free RPC URL from a provider like Helius in Network Settings, under Custom RPC.`,
+    );
+  }
+  throw last instanceof Error ? last : new RpcError(String(last));
+}
+
 export async function rpc<T>(method: string, params: unknown[] = [], url?: string): Promise<T> {
-  const endpoint = url ?? rpcUrlFor(useSettings.getState());
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: nextId++, method, params }),
-  });
-  if (!res.ok) throw new RpcError(`HTTP ${res.status} from RPC`, res.status);
-  const body = await res.json();
-  if (body.error) throw new RpcError(body.error.message ?? 'RPC error', body.error.code);
-  return body.result as T;
+  return rpcVia<T>(url ? [url] : endpointsFor(useSettings.getState()), method, params);
 }
 
 export interface EpochInfo {

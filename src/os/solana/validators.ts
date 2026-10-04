@@ -1,6 +1,6 @@
 // Validators with their self-published names (validator-info records in the Config program).
 import { getVoteAccounts, rpc, type VoteAccount } from './rpc';
-import { rpcUrlFor, useSettings } from '../settings';
+import { networkKey, useSettings } from '../settings';
 
 export const CONFIG_PROGRAM = 'Config1111111111111111111111111111111111111';
 export const VALIDATOR_INFO_KEY = 'Va1idator1nfo111111111111111111111111111111';
@@ -61,7 +61,7 @@ export function parseValidatorInfos(rows: RawInfo[]): Map<string, ValidatorInfo>
 const infoCache = new Map<string, Promise<Map<string, ValidatorInfo>>>();
 
 export function getValidatorInfos(): Promise<Map<string, ValidatorInfo>> {
-  const endpoint = rpcUrlFor(useSettings.getState());
+  const endpoint = networkKey(useSettings.getState());
   let p = infoCache.get(endpoint);
   if (!p) {
     p = rpc<RawInfo[]>('getProgramAccounts', [CONFIG_PROGRAM, { encoding: 'jsonParsed' }])
