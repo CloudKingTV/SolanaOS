@@ -14,8 +14,8 @@ import {
 import { queueForBurn } from '../../os/wallet/burnQueue';
 import { airdrop } from '../../os/wallet/airdrop';
 import { copyText } from '../../os/wallet/actions';
-import { RPC_URLS, chainFor, clusterLabel, useSettings } from '../../os/settings';
-import { formatAmount, formatSol, isLikelyAddress, rpc } from '../../os/solana/rpc';
+import { chainFor, clusterLabel, endpointsFor, useSettings } from '../../os/settings';
+import { formatAmount, formatSol, isLikelyAddress, rpcVia } from '../../os/solana/rpc';
 import { getTokenImage } from '../../os/solana/metadata';
 import { showBalloon, shortAddr } from '../../os/session';
 import { messageBox } from '../../os/dialogs';
@@ -78,7 +78,7 @@ export function MyWallet({ windowId, args }: AppProps) {
     setMainnetLamports(null);
     if (!owner || cluster === 'mainnet-beta') return;
     let live = true;
-    rpc<{ value: number }>('getBalance', [owner], RPC_URLS['mainnet-beta'])
+    rpcVia<{ value: number }>(endpointsFor({ cluster: 'mainnet-beta', customRpcUrl: '' }), 'getBalance', [owner])
       .then((r) => live && setMainnetLamports(r.value))
       .catch(() => {});
     return () => {

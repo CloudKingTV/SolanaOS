@@ -67,14 +67,58 @@ export const useSettings = create<SettingsStore>((set, get) => ({
   },
 }));
 
-export const RPC_URLS: Record<Exclude<Cluster, 'custom'>, string> = {
-  devnet: 'https://api.devnet.solana.com',
-  'mainnet-beta': 'https://api.mainnet-beta.solana.com',
-};
+/**
+ * Free Mainnet endpoints, tried in order. Solana's own public server often refuses requests
+ * from websites (HTTP 403), so it's the last resort. A custom RPC always takes priority.
+ */
+export const MAINNET_ENDPOINTS = [
+  'https://solana-rpc.publicnode.com',
+  'https://solana.publicnode.com',
+  'https://solana.drpc.org',
+  'https://api.mainnet-beta.solana.com',
+];
+export const DEVNET_ENDPOINT = 'https://api.devnet.solana.com';
 
+/** Index of the Mainnet endpoint that last worked, remembered for this browser session. */
+let mainnetIndex = (() => {
+  try {
+    const i = Number(sessionStorage.getItem('solanaos.mainnetEndpoint'));
+    return Number.isInteger(i) && i >= 0 && i < MAINNET_ENDPOINTS.length ? i : 0;
+  } catch {
+    return 0;
+  }
+})();
+
+export const useRpcEndpoint = create<{ mainnetIndex: number }>(() => ({ mainnetIndex }));
+
+/** Move past a Mainnet endpoint that refused or failed, so later calls start with the next one. */
+export function markEndpointFailed(url: string) {
+  const i = MAINNET_ENDPOINTS.indexOf(url);
+  if (i < 0 || i !== mainnetIndex) return;
+  mainnetIndex = (i + 1) % MAINNET_ENDPOINTS.length;
+  try {
+    sessionStorage.setItem('solanaos.mainnetEndpoint', String(mainnetIndex));
+  } catch {
+    // Non-critical.
+  }
+  useRpcEndpoint.setState({ mainnetIndex });
+}
+
+/** Endpoints to try for these settings, best first. */
+export function endpointsFor(s: Pick<Settings, 'cluster' | 'customRpcUrl'>): string[] {
+  if (s.cluster === 'custom' && s.customRpcUrl.trim()) return [s.customRpcUrl.trim()];
+  if (s.cluster === 'mainnet-beta') return [...MAINNET_ENDPOINTS.slice(mainnetIndex), ...MAINNET_ENDPOINTS.slice(0, mainnetIndex)];
+  return [DEVNET_ENDPOINT];
+}
+
+/** The endpoint currently in use (for display and single-endpoint tools). */
 export function rpcUrlFor(s: Pick<Settings, 'cluster' | 'customRpcUrl'>): string {
-  if (s.cluster === 'custom' && s.customRpcUrl.trim()) return s.customRpcUrl.trim();
-  return s.cluster === 'mainnet-beta' ? RPC_URLS['mainnet-beta'] : RPC_URLS.devnet;
+  return endpointsFor(s)[0];
+}
+
+/** Identifies the selected network, independent of which fallback endpoint is active. */
+export function networkKey(s: Pick<Settings, 'cluster' | 'customRpcUrl'>): string {
+  return `${s.cluster}|${s.cluster === 'custom' ? s.customRpcUrl.trim() : ''}`;
 }
 
 export function clusterLabel(c: Cluster): string {

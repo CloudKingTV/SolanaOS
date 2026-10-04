@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { closeWindow, type AppProps } from '../../os/windows';
-import { RPC_URLS, clusterLabel, useSettings, type Cluster } from '../../os/settings';
-import { rpc } from '../../os/solana/rpc';
+import { clusterLabel, endpointHost, endpointsFor, useSettings, type Cluster } from '../../os/settings';
+import { rpcVia } from '../../os/solana/rpc';
 import { Icon } from '../../shell/icons';
 
 export function NetworkSettings({ windowId }: AppProps) {
@@ -12,15 +12,16 @@ export function NetworkSettings({ windowId }: AppProps) {
   const [jupKey, setJupKey] = useState(settings.jupiterApiKey);
   const [test, setTest] = useState<{ state: 'idle' | 'testing' | 'ok' | 'fail'; text?: string }>({ state: 'idle' });
 
-  const url = cluster === 'custom' ? custom.trim() : RPC_URLS[cluster];
+  const url = endpointsFor({ cluster, customRpcUrl: custom })[0];
   const customValid = cluster !== 'custom' || /^https?:\/\/\S+$/i.test(custom.trim());
 
   const runTest = async () => {
     setTest({ state: 'testing' });
     const t0 = performance.now();
     try {
-      const slot = await rpc<number>('getSlot', [], url);
-      setTest({ state: 'ok', text: `Connected in ${Math.round(performance.now() - t0)} ms. Current slot: ${slot.toLocaleString('en-US')}.` });
+      const slot = await rpcVia<number>(endpointsFor({ cluster, customRpcUrl: custom }), 'getSlot', []);
+      const used = endpointHost(endpointsFor({ cluster, customRpcUrl: custom })[0]);
+      setTest({ state: 'ok', text: `Connected to ${used} in ${Math.round(performance.now() - t0)} ms. Current slot: ${slot.toLocaleString('en-US')}.` });
     } catch (e) {
       setTest({ state: 'fail', text: e instanceof Error ? e.message : String(e) });
     }
@@ -45,7 +46,7 @@ export function NetworkSettings({ windowId }: AppProps) {
                 {c === 'devnet'
                   ? 'Test network with free SOL. Recommended while SolanaOS is in early development.'
                   : c === 'mainnet-beta'
-                    ? "The real network. The public endpoint is rate-limited and doesn't serve NFT data."
+                    ? "The real network. SolanaOS tries several free public servers; for the most reliable experience, use your own RPC (Custom RPC)."
                     : 'Your own RPC provider (Helius, Triton, QuickNode...). Paste the full HTTPS URL, including any API key.'}
               </small>
             </span>

@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { getBalance, getTokenAccounts, formatSol, type ParsedTokenAccount } from '../solana/rpc';
 import { getTokenMetadata, type TokenMeta } from '../solana/metadata';
 import { useWallet } from './standard';
-import { useSettings, rpcUrlFor } from '../settings';
+import { useSettings, networkKey } from '../settings';
 import { showBalloon } from '../session';
 import { openApp } from '../windows';
 
@@ -66,7 +66,7 @@ let inflight: Promise<void> | null = null;
 /** Refresh holdings for the connected wallet; announces incoming funds with a balloon. */
 export function refreshPortfolio(): Promise<void> {
   const owner = useWallet.getState().connection?.address ?? null;
-  const endpoint = rpcUrlFor(useSettings.getState());
+  const endpoint = networkKey(useSettings.getState());
   if (!owner) {
     usePortfolio.setState({ owner: null, lamports: null, tokens: [], error: null, tokenError: null, updated: null, endpoint });
     return Promise.resolve();
@@ -79,7 +79,7 @@ export function refreshPortfolio(): Promise<void> {
   inflight = fetchPortfolio(owner)
     .then(({ lamports, tokens, tokenError }) => {
       // Ignore results if the wallet or cluster changed while loading.
-      if (useWallet.getState().connection?.address !== owner || rpcUrlFor(useSettings.getState()) !== endpoint) return;
+      if (useWallet.getState().connection?.address !== owner || networkKey(useSettings.getState()) !== endpoint) return;
       // Keep the last good token list if only the token lookup failed this time.
       const nextTokens = tokenError && sameView ? prev.tokens : tokens;
       if (sameView) announceChanges(prev.lamports!, prev.tokens, lamports, nextTokens);

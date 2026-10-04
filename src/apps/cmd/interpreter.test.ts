@@ -99,7 +99,7 @@ describe('command prompt', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 429 })));
     const sh = shell();
     await execute('solana slot', sh);
-    expect(sh.out.at(-1)).toBe('Error: HTTP 429 from RPC');
+    expect(sh.out.at(-1)).toBe('Error: HTTP 429: api.devnet.solana.com is rate-limiting requests');
   });
 
   it('keeps file contents intact when typing them', async () => {
