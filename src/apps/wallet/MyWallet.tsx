@@ -14,8 +14,8 @@ import {
 import { queueForBurn } from '../../os/wallet/burnQueue';
 import { airdrop } from '../../os/wallet/airdrop';
 import { copyText } from '../../os/wallet/actions';
-import { chainFor, clusterLabel, useSettings } from '../../os/settings';
-import { formatAmount, formatSol, isLikelyAddress } from '../../os/solana/rpc';
+import { RPC_URLS, chainFor, clusterLabel, useSettings } from '../../os/settings';
+import { formatAmount, formatSol, isLikelyAddress, rpc } from '../../os/solana/rpc';
 import { getTokenImage } from '../../os/solana/metadata';
 import { showBalloon, shortAddr } from '../../os/session';
 import { messageBox } from '../../os/dialogs';
@@ -47,12 +47,15 @@ export function MyWallet({ windowId, args }: AppProps) {
   const isDevnet = chainFor(useSettings.getState()) === 'solana:devnet';
 
   const portfolio = usePortfolio();
-  const [viewed, setViewed] = useState<{ lamports: number | null; tokens: Holding[]; loading: boolean; error: string | null }>({
+  const [viewed, setViewed] = useState<{ lamports: number | null; tokens: Holding[]; loading: boolean; error: string | null; tokenError: string | null }>({
     lamports: null,
     tokens: [],
     loading: false,
     error: null,
+    tokenError: null,
   });
+  // When looking at Devnet, peek at Mainnet so a real balance isn't mistaken for missing funds.
+  const [mainnetLamports, setMainnetLamports] = useState<number | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [addressInput, setAddressInput] = useState(owner ?? '');
   const [busy, setBusy] = useState(false);
@@ -62,7 +65,7 @@ export function MyWallet({ windowId, args }: AppProps) {
     setViewed((v) => ({ ...v, loading: true, error: null }));
     fetchPortfolio(viewAddress)
       .then((r) => setViewed({ ...r, loading: false, error: null }))
-      .catch((e: unknown) => setViewed({ lamports: null, tokens: [], loading: false, error: e instanceof Error ? e.message : String(e) }));
+      .catch((e: unknown) => setViewed({ lamports: null, tokens: [], loading: false, error: e instanceof Error ? e.message : String(e), tokenError: null }));
   };
   useEffect(loadViewed, [own, viewAddress, cluster, customRpc]);
 
@@ -71,7 +74,21 @@ export function MyWallet({ windowId, args }: AppProps) {
     setWindowTitle(windowId, own ? 'My Wallet' : `Wallet ${shortAddr(owner ?? '')}`);
   }, [own, owner, windowId]);
 
-  const data = own ? { lamports: portfolio.lamports, tokens: portfolio.tokens, loading: portfolio.loading, error: portfolio.error } : viewed;
+  useEffect(() => {
+    setMainnetLamports(null);
+    if (!owner || cluster === 'mainnet-beta') return;
+    let live = true;
+    rpc<{ value: number }>('getBalance', [owner], RPC_URLS['mainnet-beta'])
+      .then((r) => live && setMainnetLamports(r.value))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [owner, cluster]);
+
+  const data = own
+    ? { lamports: portfolio.lamports, tokens: portfolio.tokens, loading: portfolio.loading, error: portfolio.error, tokenError: portfolio.tokenError }
+    : viewed;
   const refresh = () => (own ? void refreshPortfolio() : loadViewed());
 
   const fungible = data.tokens.filter((t) => !isEmpty(t) && !isCollectible(t));
@@ -262,6 +279,34 @@ export function MyWallet({ windowId, args }: AppProps) {
           </section>
         </aside>
         <div className="mw-main" onClick={() => setSelected(null)}>
+          <div className={`mw-cluster ${cluster}`}>
+            <Icon name="globe" size={16} />
+            <span>
+              Showing balances on <b>{clusterLabel(cluster)}</b>
+              {cluster !== 'mainnet-beta' && ' (test network; its SOL has no value)'}.
+            </span>
+            {cluster !== 'mainnet-beta' && mainnetLamports !== null && mainnetLamports > 0 && (
+              <span className="mw-cluster-peek">
+                This wallet has <b>{formatSol(mainnetLamports, 6)} SOL</b> on Mainnet.{' '}
+                <button
+                  type="button"
+                  className="link-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    useSettings.getState().update({ cluster: 'mainnet-beta' });
+                  }}
+                >
+                  Switch to Mainnet
+                </button>
+              </span>
+            )}
+          </div>
+          {data.tokenError && !data.error && (
+            <div className="nm-error">
+              <Icon name="warning" size={16} /> Your SOL balance is current, but tokens couldn't be read ({data.tokenError}). The public RPC limits these
+              lookups; a custom RPC in Network Settings fixes it.
+            </div>
+          )}
           {data.error && (
             <div className="nm-error">
               <Icon name="warning" size={16} /> Couldn't load this wallet: {data.error}

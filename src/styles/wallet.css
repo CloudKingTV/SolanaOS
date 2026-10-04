@@ -581,3 +581,23 @@ input.wide {
     display: none;
   }
 }
+
+.mw-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 5px 8px;
+  margin-bottom: 6px;
+  border: 1px solid #c9bdf2;
+  border-radius: 4px;
+  background: #f5f2fe;
+}
+.mw-cluster.mainnet-beta {
+  border-color: #9fd6b8;
+  background: #e9fbf2;
+}
+.mw-cluster-peek {
+  flex-basis: 100%;
+  padding-left: 24px;
+}

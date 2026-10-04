@@ -5,6 +5,7 @@ import { refreshPortfolio } from '../../os/wallet/portfolio';
 import { deactivateInstruction, getStakeAccounts, stakeStatus, withdrawInstruction, type StakeAccount } from '../../os/wallet/stake';
 import { signAndSend } from '../../os/wallet/tx';
 import { formatSol, getEpochInfo, shortAddress } from '../../os/solana/rpc';
+import { getValidators, validatorName, type Validator } from '../../os/solana/validators';
 import { clusterLabel, useSettings } from '../../os/settings';
 import { messageBox } from '../../os/dialogs';
 import { showBalloon } from '../../os/session';
@@ -21,6 +22,7 @@ export function Staking({ windowId }: AppProps) {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [validators, setValidators] = useState<Map<string, Validator>>(new Map());
 
   const load = () => {
     if (!conn) return;
@@ -31,6 +33,14 @@ export function Staking({ windowId }: AppProps) {
         setEpoch(e.epoch);
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+    void getValidators()
+      .then((vs) => setValidators(new Map(vs.map((v) => [v.vote, v]))))
+      .catch(() => {});
+  };
+  const voterName = (vote: string | null) => {
+    if (!vote) return '—';
+    const v = validators.get(vote);
+    return v ? validatorName(v) : shortAddress(vote);
   };
   useEffect(load, [conn, cluster, customRpc]);
 
@@ -42,7 +52,7 @@ export function Staking({ windowId }: AppProps) {
     if (!sel || !conn) return;
     const msg =
       kind === 'deactivate'
-        ? `Unstake ${formatSol(sel.lamports, 6)} SOL from ${shortAddress(sel.voter ?? '')}?\n\nIt stops earning rewards and becomes withdrawable after the current epoch ends.`
+        ? `Unstake ${formatSol(sel.lamports, 6)} SOL from ${voterName(sel.voter)}?\n\nIt stops earning rewards and becomes withdrawable after the current epoch ends.`
         : `Withdraw ${formatSol(sel.lamports, 9)} SOL to your wallet and close this stake account?`;
     if ((await messageBox({ title: 'Staking', icon: 'question', message: msg, buttons: ['Yes', 'No'], owner: windowId })) !== 'Yes') return;
     setBusy(true);
@@ -129,7 +139,7 @@ export function Staking({ windowId }: AppProps) {
                     onDoubleClick={() => openApp('solexplorer', { url: `sol://address/${a.address}` })}
                   >
                     <td title={a.address}>{shortAddress(a.address)}</td>
-                    <td title={a.voter ?? ''}>{a.voter ? shortAddress(a.voter) : '—'}</td>
+                    <td title={a.voter ?? ''}>{voterName(a.voter)}</td>
                     <td className="num">{formatSol(a.lamports, 6)}</td>
                     <td>{STATUS_LABEL[stakeStatus(a, epoch)]}</td>
                   </tr>

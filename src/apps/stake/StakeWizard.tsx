@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { closeWindow, openApp, setCloseGuard, type AppProps } from '../../os/windows';
 import { useWallet } from '../../os/wallet/standard';
 import { refreshPortfolio, usePortfolio } from '../../os/wallet/portfolio';
 import { assertCanWrite, signAndSend } from '../../os/wallet/tx';
 import { createStakeInstructions, getRentExemption, getStakeMinimumDelegation, newSeed, STAKE_ACCOUNT_SPACE } from '../../os/wallet/stake';
-import { formatSol, getVoteAccounts, parseAmount, shortAddress, type VoteAccount } from '../../os/solana/rpc';
+import { formatSol, parseAmount } from '../../os/solana/rpc';
+import { getValidators, validatorName, type Validator } from '../../os/solana/validators';
+import { ValidatorList } from '../../shell/ValidatorList';
 import { chainFor, clusterLabel, useSettings } from '../../os/settings';
 import { showBalloon } from '../../os/session';
 import { Icon, SolanaLogo } from '../../shell/icons';
@@ -17,10 +19,9 @@ export function StakeWizard({ windowId, args }: AppProps) {
   const lamports = usePortfolio((s) => s.lamports) ?? 0;
   const cluster = useSettings((s) => s.cluster);
   const [step, setStep] = useState<Step>('welcome');
-  const [validators, setValidators] = useState<VoteAccount[] | null>(null);
+  const [validators, setValidators] = useState<Validator[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [vote, setVote] = useState<string>(typeof args.vote === 'string' ? args.vote : '');
-  const [query, setQuery] = useState('');
   const [amount, setAmount] = useState('');
   const [rent, setRent] = useState(2_282_880);
   const [minDelegation, setMinDelegation] = useState(1);
@@ -33,19 +34,16 @@ export function StakeWizard({ windowId, args }: AppProps) {
   }, [step, windowId]);
 
   useEffect(() => {
-    getVoteAccounts()
-      .then((r) => setValidators(r.current.filter((v) => v.epochVoteAccount).sort((a, b) => b.activatedStake - a.activatedStake)))
+    setValidators(null);
+    setLoadError(null);
+    getValidators()
+      .then(setValidators)
       .catch((e: unknown) => setLoadError(e instanceof Error ? e.message : String(e)));
     void getRentExemption(STAKE_ACCOUNT_SPACE).then(setRent).catch(() => {});
     void getStakeMinimumDelegation().then(setMinDelegation).catch(() => {});
   }, [cluster]);
 
-  const shown = useMemo(
-    () => (validators ?? []).filter((v) => !query || v.votePubkey.includes(query) || v.nodePubkey.includes(query)).slice(0, 200),
-    [validators, query],
-  );
-  const total = useMemo(() => (validators ?? []).reduce((s, v) => s + v.activatedStake, 0), [validators]);
-  const chosen = validators?.find((v) => v.votePubkey === vote);
+  const chosen = validators?.find((v) => v.vote === vote);
   const parsed = parseAmount(amount, 9);
   const maxStake = Math.max(0, lamports - rent - FEE_BUFFER);
   const amountError = (): string | null => {
@@ -141,45 +139,25 @@ export function StakeWizard({ windowId, args }: AppProps) {
       content = (
         <>
           <Header title="Choose a validator" sub="Lower commission means more rewards for you. Spreading stake helps decentralization." />
-          <div className="wiz-inner">
-            <input className="wide" placeholder="Search by vote or identity address" value={query} onChange={(e) => setQuery(e.target.value)} />
-            <div className="list-box wiz-validators">
-              {loadError ? (
-                <div className="fv-empty">Couldn't load validators: {loadError}</div>
-              ) : !validators ? (
-                <div className="fv-empty">Loading validators…</div>
-              ) : (
-                <table className="fv-table">
-                  <thead>
-                    <tr>
-                      <th>Validator</th>
-                      <th className="num">Commission</th>
-                      <th className="num">Stake share</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {shown.map((v) => (
-                      <tr key={v.votePubkey} className={`fv-item${vote === v.votePubkey ? ' selected' : ''}`} onClick={() => setVote(v.votePubkey)}>
-                        <td title={v.votePubkey}>{shortAddress(v.votePubkey)}</td>
-                        <td className="num">{v.commission}%</td>
-                        <td className="num">{total ? ((v.activatedStake / total) * 100).toFixed(2) : '0'}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+          <div className="wiz-inner wiz-inner-tight">
+            {loadError ? (
+              <div className="fv-empty">Couldn't load validators: {loadError}</div>
+            ) : !validators ? (
+              <div className="fv-empty">Loading validators…</div>
+            ) : (
+              <ValidatorList validators={validators} selected={vote} onSelect={setVote} height={150} />
+            )}
           </div>
         </>
       );
       back = 'welcome';
-      next = { label: 'Next >', onClick: () => setStep('amount'), disabled: !chosen };
+      next = { label: 'Next >', onClick: () => setStep('amount'), disabled: !chosen || chosen.delinquent };
       break;
     case 'amount': {
       const err = amount ? amountError() : null;
       content = (
         <>
-          <Header title="How much SOL?" sub={`Staking with ${shortAddress(vote)} (${chosen?.commission ?? '?'}% commission).`} />
+          <Header title="How much SOL?" sub={`Staking with ${chosen ? validatorName(chosen) : '?'} (${chosen?.commission ?? '?'}% commission).`} />
           <div className="wiz-inner">
             <label className="field col">
               <span>Amount to stake (SOL):</span>
@@ -225,7 +203,11 @@ export function StakeWizard({ windowId, args }: AppProps) {
                 </tr>
                 <tr>
                   <th>Validator</th>
-                  <td className="mono">{vote}</td>
+                  <td>
+                    <b>{chosen ? validatorName(chosen) : ''}</b>
+                    <br />
+                    <span className="mono">{vote}</span>
+                  </td>
                 </tr>
                 <tr>
                   <th>Commission</th>
