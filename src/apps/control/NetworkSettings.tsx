@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { closeWindow, type AppProps } from '../../os/windows';
-import { clusterLabel, endpointHost, endpointsFor, useSettings, type Cluster } from '../../os/settings';
-import { rpcVia } from '../../os/solana/rpc';
+import { MAINNET_ENDPOINTS, clusterLabel, endpointHost, endpointsFor, useSettings, type Cluster } from '../../os/settings';
+import { probeEndpoint, rpcVia } from '../../os/solana/rpc';
 import { Icon } from '../../shell/icons';
 
 export function NetworkSettings({ windowId }: AppProps) {
@@ -11,12 +11,26 @@ export function NetworkSettings({ windowId }: AppProps) {
   const [allowMainnet, setAllowMainnet] = useState(settings.allowMainnetTransactions);
   const [jupKey, setJupKey] = useState(settings.jupiterApiKey);
   const [test, setTest] = useState<{ state: 'idle' | 'testing' | 'ok' | 'fail'; text?: string }>({ state: 'idle' });
+  const [probes, setProbes] = useState<{ host: string; ok: boolean; ms: number; detail: string }[] | null>(null);
 
   const url = endpointsFor({ cluster, customRpcUrl: custom })[0];
   const customValid = cluster !== 'custom' || /^https?:\/\/\S+$/i.test(custom.trim());
 
   const runTest = async () => {
     setTest({ state: 'testing' });
+    setProbes(null);
+    if (cluster === 'mainnet-beta') {
+      // Check every free server so it's clear which ones work from this device and network.
+      const results = await Promise.all(MAINNET_ENDPOINTS.map(async (u) => ({ host: endpointHost(u), ...(await probeEndpoint(u)) })));
+      setProbes(results);
+      const working = results.filter((r) => r.ok).length;
+      setTest(
+        working
+          ? { state: 'ok', text: `${working} of ${results.length} free Mainnet servers answered. SolanaOS will use them automatically.` }
+          : { state: 'fail', text: 'None of the free Mainnet servers answered from this device. Add a free RPC URL (for example from Helius) under Custom RPC.' },
+      );
+      return;
+    }
     const t0 = performance.now();
     try {
       const slot = await rpcVia<number>(endpointsFor({ cluster, customRpcUrl: custom }), 'getSlot', []);
@@ -94,6 +108,21 @@ export function NetworkSettings({ windowId }: AppProps) {
           {test.state === 'testing' ? 'Testing…' : test.text}
         </span>
       </div>
+      {probes && (
+        <table className="se-table ns-probes">
+          <tbody>
+            {probes.map((p) => (
+              <tr key={p.host}>
+                <td className={p.ok ? 'good' : 'bad'}>{p.ok ? '✓' : '✗'}</td>
+                <td>{p.host}</td>
+                <td className="ns-probe-detail" title={p.detail}>
+                  {p.ok ? `${p.ms} ms` : p.detail}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
       <div className="dialog-buttons">
         <button
           type="button"

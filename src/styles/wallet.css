@@ -601,3 +601,25 @@ input.wide {
   flex-basis: 100%;
   padding-left: 24px;
 }
+
+.ns-probes {
+  margin-top: 8px;
+  font-size: 11px;
+  table-layout: fixed;
+  width: 100%;
+}
+.ns-probes td:first-child {
+  width: 18px;
+}
+.ns-probes td:nth-child(2) {
+  width: 45%;
+  word-break: break-all;
+}
+.ns-probes td {
+  padding: 2px 6px;
+}
+.ns-probe-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

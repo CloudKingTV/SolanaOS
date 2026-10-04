@@ -667,6 +667,8 @@
 }
 .window.fit .window-body > * {
   flex: none;
+  /* Fixed-size dialogs shrink to fit phone screens. */
+  max-width: calc(100vw - 8px);
 }
 
 /* resize handles */

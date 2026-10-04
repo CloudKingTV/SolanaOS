@@ -133,7 +133,7 @@ function Performance({ data }: { data: PerfData }) {
     <div className="nm-perf">
       {data.error && (
         <div className="nm-error">
-          <Icon name="warning" size={16} /> Can't reach {endpointHost(rpcUrlFor(settings))}: {data.error}
+          <Icon name="warning" size={16} /> Couldn't load cluster stats: {data.error}
         </div>
       )}
       <div className="nm-row">

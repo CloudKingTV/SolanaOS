@@ -75,6 +75,8 @@ export const MAINNET_ENDPOINTS = [
   'https://solana-rpc.publicnode.com',
   'https://solana.publicnode.com',
   'https://solana.drpc.org',
+  'https://solana.api.onfinality.io/public',
+  'https://endpoints.omniatech.io/v1/sol/mainnet/public',
   'https://api.mainnet-beta.solana.com',
 ];
 export const DEVNET_ENDPOINT = 'https://api.devnet.solana.com';
