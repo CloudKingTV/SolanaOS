@@ -4,6 +4,7 @@ import { Icon, type IconName } from '../../shell/icons';
 const applets: { id: string; label: string; icon: IconName; desc: string }[] = [
   { id: 'display', label: 'Display', icon: 'display', desc: 'Change the theme, wallpaper and screen saver.' },
   { id: 'netsettings', label: 'Network Settings', icon: 'globe', desc: 'Choose the Solana cluster and RPC endpoint.' },
+  { id: 'programs', label: 'Add or Remove Programs', icon: 'add-remove', desc: 'Install or remove other Solana apps.' },
   { id: 'sounds', label: 'Sounds', icon: 'sound', desc: 'Turn system sounds on or off and preview them.' },
   { id: 'netmon', label: 'Network Monitor', icon: 'network-monitor', desc: 'Watch live cluster performance and validators.' },
   { id: 'about', label: 'System', icon: 'system', desc: 'See which version of SolanaOS you are running.' },

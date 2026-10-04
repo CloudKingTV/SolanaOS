@@ -6,6 +6,14 @@ SolanaOS recreates the look and feel of an early-2000s desktop: a BIOS boot scre
 
 > SolanaOS is an independent community project. It is not affiliated with or endorsed by the Solana Foundation or Microsoft.
 
+## What's new in 0.4 (more apps)
+
+| App | What it does |
+| --- | --- |
+| **Solamp** | A Winamp-style player with a spectrum visualizer and playlist. Plays your own audio files, music NFTs in your wallet (**+ My NFTs**), and **Solana Radio**: music generated live from the cluster, where note density follows real TPS and the melody changes with the slot. |
+| **SolMessenger** | MSN-style wallet-to-wallet chat. Each message is a memo plus a 0 SOL transfer to your buddy, so it lands in both wallets' history. Buddy list, unread counts, sounds, balloons and `/nudge` (it shakes their window). Checks every 20 seconds while open. **Messages are public and permanent on-chain**, and each one costs a network fee (about 0.000005 SOL). |
+| **Program Files** (Add or Remove Programs) | Install other Solana apps (Jupiter, Raydium, Orca, Kamino, Drift, Marinade, Jito, Magic Eden, Tensor, Solscan, Birdeye, Realms, Squads, the Devnet faucet and more) or any https website. Each program is an Internet Shortcut in `C:\Program Files`, can be pinned to the desktop, shows up under Start → All Programs → Program Files, and runs in a SolanaOS window. Many sites refuse to be embedded in other sites, so every program window also has **Open in New Tab**. Embedded sites connect to your wallet themselves; SolanaOS's wallet session isn't shared with them. |
+
 ## What's in Phase 3 (apps)
 
 | App | What it does |
@@ -71,8 +79,8 @@ SolanaOS starts on **devnet**. To use your own RPC provider (for example Helius 
 
 1. **Shell**: done.
 2. **Chain integration**: done.
-3. **Power apps**: this release. Still to come: Solamp (media player), SolMessenger (wallet-to-wallet chat) and Program Files (sandboxed dApps).
-4. **Ship as an OS**: installable web app, Tauri desktop build, and a bootable Linux image that starts straight into SolanaOS.
+3. **Power apps**: done (Mint Paint, Collectibles, staking, Swap, Solitaire, Solamp, SolMessenger, Program Files).
+4. **Ship as an OS** (next): installable web app, Tauri desktop build, and a bootable Linux image that starts straight into SolanaOS.
 
 ## Development
 

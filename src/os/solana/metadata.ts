@@ -89,23 +89,56 @@ export async function getTokenMetadata(mints: { mint: string; programId: string 
   return out;
 }
 
-const imageCache = new Map<string, Promise<string | undefined>>();
+/** Turn ipfs:// and ar:// links into https gateway URLs; reject anything that isn't https. */
+export function toHttps(url: unknown): string | undefined {
+  if (typeof url !== 'string') return undefined;
+  const u = url.trim();
+  if (/^ipfs:\/\//i.test(u)) return `https://ipfs.io/ipfs/${u.replace(/^ipfs:\/\/(ipfs\/)?/i, '')}`;
+  if (/^ar:\/\//i.test(u)) return `https://arweave.net/${u.slice(5)}`;
+  return /^https:\/\//i.test(u) ? u : undefined;
+}
 
-/** Fetch the off-chain JSON for a token and return its image URL, if any (best effort, 5s timeout). */
-export function getTokenImage(uri: string): Promise<string | undefined> {
-  if (!/^https:\/\//i.test(uri)) return Promise.resolve(undefined);
-  let p = imageCache.get(uri);
+export interface TokenJson {
+  name?: string;
+  image?: string;
+  animation_url?: string;
+  properties?: { category?: string; files?: { uri?: string; type?: string }[] };
+}
+
+const jsonCache = new Map<string, Promise<TokenJson | null>>();
+
+/** Fetch a token's off-chain JSON (best effort, 5s timeout, cached). */
+export function getTokenJson(uri: string): Promise<TokenJson | null> {
+  const url = toHttps(uri);
+  if (!url) return Promise.resolve(null);
+  let p = jsonCache.get(url);
   if (!p) {
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), 5000);
-    p = fetch(uri, { signal: ctl.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: { image?: unknown } | null) => (typeof j?.image === 'string' && /^https:\/\//i.test(j.image) ? j.image : undefined))
-      .catch(() => undefined)
+    p = fetch(url, { signal: ctl.signal })
+      .then((r) => (r.ok ? (r.json() as Promise<TokenJson>) : null))
+      .catch(() => null)
       .finally(() => clearTimeout(t));
-    imageCache.set(uri, p);
+    jsonCache.set(url, p);
   }
   return p;
+}
+
+export function getTokenImage(uri: string): Promise<string | undefined> {
+  return getTokenJson(uri).then((j) => toHttps(j?.image));
+}
+
+const AUDIO_EXT = /\.(mp3|wav|ogg|oga|flac|m4a|aac|opus)(\?|#|$)/i;
+
+/** The playable audio file in a token's metadata, if it's a music NFT. */
+export function audioFromJson(j: TokenJson | null): string | undefined {
+  if (!j) return undefined;
+  const file = j.properties?.files?.find((f) => /^audio\//i.test(f.type ?? '') || AUDIO_EXT.test(f.uri ?? ''));
+  const fromFile = toHttps(file?.uri);
+  if (fromFile) return fromFile;
+  const anim = toHttps(j.animation_url);
+  if (anim && (AUDIO_EXT.test(anim) || j.properties?.category === 'audio')) return anim;
+  return undefined;
 }
 
 export function clearMetadataCache() {
