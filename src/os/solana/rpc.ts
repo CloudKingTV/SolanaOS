@@ -14,52 +14,113 @@ export class RpcError extends Error {
 
 let nextId = 1;
 
-/** HTTP statuses that mean "try another endpoint" rather than "the request was wrong". */
-const RETRYABLE = new Set([401, 403, 408, 425, 429, 500, 502, 503, 504]);
+/** HTTP statuses that mean the server itself is unusable from here (not just this request). */
+const SERVER_DOWN = new Set([401, 403, 408, 425, 429, 500, 502, 503, 504]);
+
+/** JSON-RPC errors that mean "this server won't do this", so another server might. */
+const UNSUPPORTED_CODES = new Set([-32601, -32005, -32010, -32011]);
+const UNSUPPORTED_TEXT = /not (allowed|supported|available|enabled|whitelisted)|disabled|rate.?limit|too many|forbidden|unauthori[sz]ed|api.?key|upgrade|paid|plan|blocked|exceeded|excluded/i;
+
+export function isUnsupportedError(err: { code?: number; message?: string }): boolean {
+  return (err.code !== undefined && UNSUPPORTED_CODES.has(err.code)) || UNSUPPORTED_TEXT.test(err.message ?? '');
+}
 
 function httpMessage(status: number, host: string): string {
   if (status === 403) return `HTTP 403: ${host} refuses requests from websites`;
   if (status === 429) return `HTTP 429: ${host} is rate-limiting requests`;
+  if (status === 400) return `HTTP 400: ${host} won't serve this request`;
   return `HTTP ${status} from ${host}`;
 }
 
-/** Send a JSON-RPC request, falling back through `endpoints` on refusals and network errors. */
+/** Remembers which endpoint last answered each method, so mixed-capability servers work together. */
+const methodPreference = new Map<string, string>();
+
+const SLOW_METHODS = new Set(['getProgramAccounts', 'getVoteAccounts', 'sendTransaction']);
+
+async function fetchWithTimeout(url: string, body: string, ms: number): Promise<Response> {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms);
+  try {
+    return await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body, signal: ctl.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/**
+ * Send a JSON-RPC request. With several endpoints, any refusal (HTTP error, blocked request,
+ * timeout, or "method not available" style error) moves on to the next endpoint for this
+ * request. Server-wide failures also make that endpoint the last choice for later requests.
+ */
 export async function rpcVia<T>(endpoints: string[], method: string, params: unknown[] = []): Promise<T> {
-  let last: unknown = null;
-  for (const endpoint of endpoints) {
+  const multi = endpoints.length > 1;
+  const preferred = methodPreference.get(method);
+  const order = preferred && endpoints.includes(preferred) ? [preferred, ...endpoints.filter((e) => e !== preferred)] : endpoints;
+  const failures: string[] = [];
+  let last: RpcError | null = null;
+  for (const endpoint of order) {
     const host = endpointHost(endpoint);
     let res: Response;
     try {
-      res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: nextId++, method, params }),
-      });
+      res = await fetchWithTimeout(endpoint, JSON.stringify({ jsonrpc: '2.0', id: nextId++, method, params }), SLOW_METHODS.has(method) ? 25_000 : 10_000);
     } catch (e) {
-      // Network failure, or the server doesn't allow requests from websites (CORS).
-      last = new RpcError(`Couldn't reach ${host}${e instanceof Error && e.message ? ` (${e.message})` : ''}`);
+      const aborted = e instanceof DOMException && e.name === 'AbortError';
+      last = new RpcError(aborted ? `${host} timed out` : `Couldn't reach ${host} (blocked or offline)`);
+      failures.push(`${host}: ${aborted ? 'timed out' : 'blocked'}`);
       markEndpointFailed(endpoint);
       continue;
     }
     if (!res.ok) {
       last = new RpcError(httpMessage(res.status, host), res.status);
-      if (RETRYABLE.has(res.status)) {
-        markEndpointFailed(endpoint);
+      failures.push(`${host}: HTTP ${res.status}`);
+      if (!multi) throw last;
+      if (SERVER_DOWN.has(res.status)) markEndpointFailed(endpoint);
+      continue;
+    }
+    let body: { result?: T; error?: { code?: number; message?: string } };
+    try {
+      body = await res.json();
+    } catch {
+      last = new RpcError(`${host} sent an unreadable reply`);
+      failures.push(`${host}: bad reply`);
+      if (!multi) throw last;
+      continue;
+    }
+    if (body.error) {
+      const err = new RpcError(body.error.message ?? 'RPC error', body.error.code);
+      if (multi && isUnsupportedError(body.error)) {
+        last = err;
+        failures.push(`${host}: ${(body.error.message ?? '').slice(0, 60)}`);
         continue;
       }
-      throw last;
+      throw err;
     }
-    const body = await res.json();
-    if (body.error) throw new RpcError(body.error.message ?? 'RPC error', body.error.code);
+    if (multi) methodPreference.set(method, endpoint);
     return body.result as T;
   }
-  if (endpoints.length > 1) {
-    const reason = last instanceof Error ? last.message : String(last);
+  if (multi) {
     throw new RpcError(
-      `None of the free Mainnet servers answered (last: ${reason}). Add a free RPC URL from a provider like Helius in Network Settings, under Custom RPC.`,
+      `No free Mainnet server would answer ${method} (${failures.join('; ')}). For reliable access, add a free RPC URL from a provider like Helius in Network Settings, under Custom RPC.`,
     );
   }
-  throw last instanceof Error ? last : new RpcError(String(last));
+  throw last ?? new RpcError('RPC request failed');
+}
+
+/** Check one endpoint with a couple of common requests (for Network Settings diagnostics). */
+export async function probeEndpoint(url: string): Promise<{ ok: boolean; ms: number; detail: string }> {
+  const t0 = performance.now();
+  try {
+    const slot = await rpcVia<number>([url], 'getSlot');
+    await rpcVia<unknown>([url], 'getEpochInfo');
+    return { ok: true, ms: Math.round(performance.now() - t0), detail: `slot ${slot.toLocaleString('en-US')}` };
+  } catch (e) {
+    return { ok: false, ms: Math.round(performance.now() - t0), detail: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/** Forget learned per-method servers (used when the network changes, and in tests). */
+export function resetMethodPreferences() {
+  methodPreference.clear();
 }
 
 export async function rpc<T>(method: string, params: unknown[] = [], url?: string): Promise<T> {
@@ -320,3 +381,8 @@ export function parseAmount(input: string, decimals: number): bigint | null {
   if (f.length > decimals) return null;
   return BigInt(w || '0') * 10n ** BigInt(decimals) + BigInt(f.padEnd(decimals, '0') || '0');
 }
+
+// Learned per-method servers belong to one network.
+useSettings.subscribe((s, prev) => {
+  if (s.cluster !== prev.cluster || s.customRpcUrl !== prev.customRpcUrl) resetMethodPreferences();
+});
