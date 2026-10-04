@@ -2,18 +2,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { closeWindow, focusWindow, getApp, openApp, useWindows, type AppProps } from '../../os/windows';
 import { clusterLabel, endpointHost, rpcUrlFor, useSettings } from '../../os/settings';
 import {
-  formatSol,
   getEpochInfo,
   getRecentPerformanceSamples,
   getVersion,
-  getVoteAccounts,
-  shortAddress,
   tpsFromSamples,
   type EpochInfo,
   type PerfSample,
-  type VoteAccount,
 } from '../../os/solana/rpc';
 import { MenuBar, sep } from '../../shell/Menu';
+import { ValidatorList } from '../../shell/ValidatorList';
+import { getValidators, type Validator } from '../../os/solana/validators';
 import { Icon } from '../../shell/icons';
 
 type Tab = 'applications' | 'performance' | 'validators';
@@ -201,63 +199,28 @@ function Performance({ data }: { data: PerfData }) {
 }
 
 function Validators() {
-  const [data, setData] = useState<{ current: VoteAccount[]; delinquent: VoteAccount[] } | null>(null);
+  const [data, setData] = useState<Validator[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const cluster = useSettings((s) => s.cluster);
   const rpcUrl = useSettings((s) => s.customRpcUrl);
   const load = useCallback(() => {
     setError(null);
-    getVoteAccounts()
+    getValidators()
       .then(setData)
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
   useEffect(load, [load, cluster, rpcUrl]);
-  const rows = data
-    ? [...data.current.map((v) => ({ ...v, delinquent: false })), ...data.delinquent.map((v) => ({ ...v, delinquent: true }))].sort(
-        (a, b) => b.activatedStake - a.activatedStake,
-      )
-    : [];
-  const total = rows.reduce((t, v) => t + v.activatedStake, 0);
   return (
     <div className="nm-validators">
-      <div className="list-box">
-        {error ? (
-          <div className="fv-empty">Couldn't load validators: {error}</div>
-        ) : !data ? (
-          <div className="fv-empty">Loading validators…</div>
-        ) : (
-          <table className="fv-table">
-            <thead>
-              <tr>
-                <th>Identity</th>
-                <th>Vote Account</th>
-                <th className="num">Active Stake (SOL)</th>
-                <th className="num">Share</th>
-                <th className="num">Comm.</th>
-                <th className="num">Last Vote</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.slice(0, 300).map((v) => (
-                <tr key={v.votePubkey} className="fv-item">
-                  <td title={v.nodePubkey}>{shortAddress(v.nodePubkey)}</td>
-                  <td title={v.votePubkey}>{shortAddress(v.votePubkey)}</td>
-                  <td className="num">{formatSol(v.activatedStake, 0)}</td>
-                  <td className="num">{total ? ((v.activatedStake / total) * 100).toFixed(2) : '0'}%</td>
-                  <td className="num">{v.commission}%</td>
-                  <td className="num">{v.lastVote.toLocaleString('en-US')}</td>
-                  <td>{v.delinquent ? 'Delinquent' : 'Voting'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {error ? (
+        <div className="fv-empty">Couldn't load validators: {error}</div>
+      ) : !data ? (
+        <div className="fv-empty">Loading validators…</div>
+      ) : (
+        <ValidatorList validators={data} onSelect={(vote) => openApp('solexplorer', { url: `sol://address/${vote}` })} />
+      )}
       <div className="nm-validators-foot">
-        <span>
-          {data ? `${data.current.length} voting, ${data.delinquent.length} delinquent · ${formatSol(total, 0)} SOL staked` : ''}
-        </span>
+        <span>Click a validator to open it in Solana Explorer.</span>
         <button type="button" className="btn" onClick={load}>
           Refresh
         </button>

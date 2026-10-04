@@ -18,6 +18,8 @@ interface PortfolioState {
   tokens: Holding[];
   loading: boolean;
   error: string | null;
+  /** Token accounts couldn't be read (the SOL balance may still be fine). */
+  tokenError: string | null;
   updated: number | null;
 }
 
@@ -28,6 +30,7 @@ export const usePortfolio = create<PortfolioState>(() => ({
   tokens: [],
   loading: false,
   error: null,
+  tokenError: null,
   updated: null,
 }));
 
@@ -38,13 +41,24 @@ export function tokenLabel(h: Pick<Holding, 'meta' | 'mint'>): string {
 export const isCollectible = (h: ParsedTokenAccount) => h.decimals === 0 && h.amount === '1';
 export const isEmpty = (h: ParsedTokenAccount) => h.amount === '0';
 
-export async function fetchPortfolio(owner: string): Promise<{ lamports: number; tokens: Holding[] }> {
-  const [lamports, accounts] = await Promise.all([getBalance(owner), getTokenAccounts(owner)]);
-  const metas = await getTokenMetadata(accounts.map((a) => ({ mint: a.mint, programId: a.programId })));
-  const tokens = accounts
+/**
+ * SOL balance is required; tokens and their names are best-effort, so a rate-limited or
+ * restricted RPC still shows the right SOL balance.
+ */
+export async function fetchPortfolio(owner: string): Promise<{ lamports: number; tokens: Holding[]; tokenError: string | null }> {
+  const [balance, accounts] = await Promise.allSettled([getBalance(owner), getTokenAccounts(owner)]);
+  if (balance.status === 'rejected') throw balance.reason;
+  if (accounts.status === 'rejected') {
+    const reason = accounts.reason instanceof Error ? accounts.reason.message : String(accounts.reason);
+    return { lamports: balance.value, tokens: [], tokenError: reason };
+  }
+  const metas = await getTokenMetadata(accounts.value.map((a) => ({ mint: a.mint, programId: a.programId }))).catch(
+    () => new Map<string, TokenMeta | null>(),
+  );
+  const tokens = accounts.value
     .map((a) => ({ ...a, meta: metas.get(a.mint) ?? null }))
     .sort((a, b) => Number(isEmpty(a)) - Number(isEmpty(b)) || tokenLabel(a).localeCompare(tokenLabel(b)));
-  return { lamports, tokens };
+  return { lamports: balance.value, tokens, tokenError: null };
 }
 
 let inflight: Promise<void> | null = null;
@@ -54,20 +68,22 @@ export function refreshPortfolio(): Promise<void> {
   const owner = useWallet.getState().connection?.address ?? null;
   const endpoint = rpcUrlFor(useSettings.getState());
   if (!owner) {
-    usePortfolio.setState({ owner: null, lamports: null, tokens: [], error: null, updated: null, endpoint });
+    usePortfolio.setState({ owner: null, lamports: null, tokens: [], error: null, tokenError: null, updated: null, endpoint });
     return Promise.resolve();
   }
   if (inflight) return inflight;
   const prev = usePortfolio.getState();
   const sameView = prev.owner === owner && prev.endpoint === endpoint && prev.lamports !== null;
-  if (!sameView) usePortfolio.setState({ owner, endpoint, lamports: null, tokens: [], error: null });
+  if (!sameView) usePortfolio.setState({ owner, endpoint, lamports: null, tokens: [], error: null, tokenError: null });
   usePortfolio.setState({ loading: true });
   inflight = fetchPortfolio(owner)
-    .then(({ lamports, tokens }) => {
+    .then(({ lamports, tokens, tokenError }) => {
       // Ignore results if the wallet or cluster changed while loading.
       if (useWallet.getState().connection?.address !== owner || rpcUrlFor(useSettings.getState()) !== endpoint) return;
-      if (sameView) announceChanges(prev.lamports!, prev.tokens, lamports, tokens);
-      usePortfolio.setState({ owner, endpoint, lamports, tokens, error: null, updated: Date.now() });
+      // Keep the last good token list if only the token lookup failed this time.
+      const nextTokens = tokenError && sameView ? prev.tokens : tokens;
+      if (sameView) announceChanges(prev.lamports!, prev.tokens, lamports, nextTokens);
+      usePortfolio.setState({ owner, endpoint, lamports, tokens: nextTokens, error: null, tokenError, updated: Date.now() });
     })
     .catch((e: unknown) => usePortfolio.setState({ error: e instanceof Error ? e.message : String(e) }))
     .finally(() => {
