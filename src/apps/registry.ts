@@ -27,6 +27,11 @@ import { StakeWizard } from './stake/StakeWizard';
 import { Staking } from './stake/Staking';
 import { Swap } from './swap/Swap';
 import { Solitaire } from './solitaire/Solitaire';
+import { Solamp } from './solamp/Solamp';
+import { Messenger } from './messenger/Messenger';
+import { Chat } from './messenger/Chat';
+import { ProgramFiles } from './programs/ProgramFiles';
+import { ProgramHost } from './programs/ProgramHost';
 
 export const APPS: AppDef[] = [
   { id: 'paint', title: 'untitled - Paint', icon: 'paint', component: Paint, width: 760, height: 600, minWidth: 420, minHeight: 360, aliases: ['mspaint', 'mintpaint'] },
@@ -37,6 +42,11 @@ export const APPS: AppDef[] = [
   { id: 'staking', title: 'Staking', icon: 'stake', component: Staking, width: 620, height: 400, minWidth: 420, minHeight: 260, singleton: true, aliases: ['stakes'] },
   { id: 'swap', title: 'Swap', icon: 'swap', component: Swap, width: 440, height: 480, resizable: false, singleton: true, fitContent: true, aliases: ['exchange', 'jupiter'] },
   { id: 'solitaire', title: 'Solitaire', icon: 'cards', component: Solitaire, width: 640, height: 520, minWidth: 600, minHeight: 440, singleton: true, aliases: ['sol', 'klondike'] },
+  { id: 'solamp', title: 'Solamp', icon: 'solamp', component: Solamp, width: 360, height: 420, resizable: false, maximizable: false, singleton: true, fitContent: true, aliases: ['winamp', 'wmplayer', 'media', 'music', 'radio'] },
+  { id: 'messenger', title: 'SolMessenger', icon: 'messenger', component: Messenger, width: 300, height: 520, minWidth: 240, minHeight: 360, singleton: true, aliases: ['msnmsgr', 'msn', 'chat', 'im'] },
+  { id: 'chat', title: 'Conversation', icon: 'messenger', component: Chat, width: 440, height: 440, minWidth: 300, minHeight: 300 },
+  { id: 'programs', title: 'Add or Remove Programs', icon: 'add-remove', component: ProgramFiles, width: 640, height: 480, minWidth: 420, minHeight: 320, singleton: true, aliases: ['appwiz.cpl', 'appwiz', 'programfiles', 'apps'] },
+  { id: 'program', title: 'Program', icon: 'globe', component: ProgramHost, width: 900, height: 620, minWidth: 360, minHeight: 300 },
   { id: 'mywallet', title: 'My Wallet', icon: 'wallet', component: MyWallet, width: 720, height: 500, minWidth: 420, minHeight: 300, aliases: ['wallet', 'mycomputer'] },
   { id: 'solexplorer', title: 'Solana Explorer', icon: 'explorer-web', component: SolExplorer, width: 760, height: 540, minWidth: 420, minHeight: 300, singleton: true, aliases: ['iexplore', 'explorer.solana', 'browser', 'solexplorer'] },
   { id: 'inbox', title: 'Inbox - Solana Mail', icon: 'inbox', component: Inbox, width: 760, height: 520, minWidth: 480, minHeight: 320, singleton: true, aliases: ['outlook', 'msimn', 'mail'] },

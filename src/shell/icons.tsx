@@ -528,6 +528,48 @@ const icons = {
       <path d="M12.5 17c-2-3-5-1-3.5 1.5L12.5 22l3.5-3.5c1.5-2.5-1.5-4.5-3.5-1.5z" fill="#c6161b" />
     </>
   ),
+  solamp: (u) => (
+    <>
+      <defs>
+        {lg(u('sp'), [['0', '#ffd27a'], ['1', '#e07a12']], 1, 1)}
+        {lg(u('sz'), [['0', '#14F195'], ['1', '#9945FF']], 1, 0)}
+      </defs>
+      <path d="M5 4l23 10.5c1.4.7 1.4 2.3 0 3L5 28c-1.3.6-2.5-.2-2.5-1.6V5.6C2.5 4.2 3.7 3.4 5 4z" fill={`url(#${u('sp')})`} stroke="#7a3d06" strokeLinejoin="round" />
+      <path d="M7 10.5l5 2-5 2zM7 17l9 3.5L7 24z" fill={`url(#${u('sz')})`} stroke="#3b1a6b" strokeWidth="0.6" />
+      <path d="M17 11.5v8.5" stroke="#3b1a6b" strokeWidth="1.4" />
+      <circle cx="15.5" cy="20.5" r="2" fill="#3b1a6b" />
+      <path d="M17 11.5c2 .5 3 1.5 3 3" fill="none" stroke="#3b1a6b" strokeWidth="1.4" strokeLinecap="round" />
+    </>
+  ),
+  messenger: (u) => (
+    <>
+      <defs>
+        {lg(u('m1'), [['0', '#b8f7d9'], ['1', '#0d9a5c']])}
+        {lg(u('m2'), [['0', '#d9c2ff'], ['1', '#6a2fe0']])}
+      </defs>
+      <circle cx="11" cy="9" r="5" fill={`url(#${u('m1')})`} stroke="#0b5a32" />
+      <path d="M2.5 27c0-6 3.8-10 8.5-10s8.5 4 8.5 10z" fill={`url(#${u('m1')})`} stroke="#0b5a32" />
+      <circle cx="21" cy="10.5" r="5" fill={`url(#${u('m2')})`} stroke="#2e1470" />
+      <path d="M12.5 28.5c0-6 3.8-10 8.5-10s8.5 4 8.5 10z" fill={`url(#${u('m2')})`} stroke="#2e1470" />
+    </>
+  ),
+  'program-files': (u) => (
+    <>
+      {folderShape(u)}
+      <rect x="11" y="14" width="10" height="10" rx="1.5" fill="#fff" stroke="#4a3a80" />
+      <path d="M13 17h6M13 19.5h6M13 22h4" stroke="#9945FF" strokeWidth="1.2" />
+    </>
+  ),
+  'add-remove': (u) => (
+    <>
+      <defs>{lg(u('ar'), [['0', '#ffffff'], ['1', '#c9d3e6']])}</defs>
+      <rect x="3" y="12" width="17" height="15" rx="1" fill={`url(#${u('ar')})`} stroke="#4f5f80" />
+      <path d="M3 12l3-4h17l-3 4zM20 12l3-4v15l-3 4z" fill="#dfe6f2" stroke="#4f5f80" strokeLinejoin="round" />
+      {solanaMark(u, 6.5, 15.5, 0.42)}
+      <circle cx="24" cy="23" r="6" fill="#14b981" stroke="#fff" />
+      <path d="M21 23h6M24 20v6" stroke="#fff" strokeWidth="1.8" />
+    </>
+  ),
 } satisfies Record<string, Draw>;
 
 export type IconName = keyof typeof icons;

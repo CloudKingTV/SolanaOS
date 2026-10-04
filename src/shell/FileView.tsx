@@ -11,6 +11,7 @@ export function iconFor(n: VNode): IconName {
   if (n.type === 'dir') return /my pictures$/i.test(n.path) ? 'my-pictures' : 'folder';
   const ext = extname(displayName(n));
   if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) return 'image';
+  if (ext === 'url') return 'globe';
   return ext === 'txt' || ext === 'md' || ext === 'log' ? 'file-text' : 'file';
 }
 
@@ -18,6 +19,7 @@ export function typeName(n: VNode): string {
   if (n.type === 'dir') return 'File Folder';
   const ext = extname(displayName(n));
   if (ext === 'txt') return 'Text Document';
+  if (ext === 'url') return 'Internet Shortcut';
   if (ext === 'png') return 'PNG Image';
   return ext ? `${ext.toUpperCase()} File` : 'File';
 }
@@ -98,7 +100,7 @@ export function FileView({
     renaming === keyOf(n.path) && onRename ? (
       <RenameBox initial={displayName(n)} onDone={(name) => onRename(n, name)} />
     ) : (
-      <span className="fv-name">{displayName(n)}</span>
+      <span className="fv-name">{displayName(n).replace(/\.url$/i, '')}</span>
     );
 
   const itemProps = (n: VNode) => ({

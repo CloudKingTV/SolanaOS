@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { setStartOpen, showExitDialog, useSession } from '../os/session';
 import { openApp } from '../os/windows';
 import { openMyDocuments, openFolder } from '../os/shellActions';
-import { MY_DOCUMENTS } from '../os/vfs';
+import { MY_DOCUMENTS, useVfs } from '../os/vfs';
+import { installedPrograms } from '../os/programs/programs';
 import { Icon, type IconName } from './icons';
 import { WalletIcon } from './WalletPicker';
-import { MenuList, type MenuItem } from './Menu';
+import { MenuList, sep, type MenuItem } from './Menu';
 
 interface Entry {
   icon: IconName;
@@ -21,6 +22,8 @@ const left: Entry[] = [
 ];
 const recent: Entry[] = [
   { icon: 'paint', label: 'Mint Paint', onClick: () => openApp('paint') },
+  { icon: 'messenger', label: 'SolMessenger', onClick: () => openApp('messenger') },
+  { icon: 'solamp', label: 'Solamp', onClick: () => openApp('solamp') },
   { icon: 'swap', label: 'Swap', onClick: () => openApp('swap') },
   { icon: 'stake', label: 'Staking', onClick: () => openApp('staking') },
   { icon: 'send', label: 'Send Wizard', onClick: () => openApp('send') },
@@ -36,12 +39,13 @@ const right: (Entry | 'sep')[] = [
   'sep',
   { icon: 'control-panel', label: 'Control Panel', onClick: () => openApp('control') },
   { icon: 'globe', label: 'Network Settings', onClick: () => openApp('netsettings') },
+  { icon: 'add-remove', label: 'Add or Remove Programs', onClick: () => openApp('programs') },
   'sep',
   { icon: 'help', label: 'About SolanaOS', onClick: () => openApp('about') },
   { icon: 'run', label: 'Run...', onClick: () => openApp('run') },
 ];
 
-const allPrograms: MenuItem[] = [
+const builtinPrograms: MenuItem[] = [
   {
     label: 'Accessories',
     icon: 'folder',
@@ -51,6 +55,7 @@ const allPrograms: MenuItem[] = [
       { label: 'Notepad', icon: 'notepad', onClick: () => openApp('notepad') },
       { label: 'Paint', icon: 'paint', onClick: () => openApp('paint') },
       { label: 'Picture Viewer', icon: 'image', onClick: () => openApp('pictures') },
+      { label: 'Solamp', icon: 'solamp', onClick: () => openApp('solamp') },
       { label: 'Windows Explorer', icon: 'folder-open', onClick: () => openFolder('C:\\') },
     ],
   },
@@ -61,6 +66,7 @@ const allPrograms: MenuItem[] = [
       { label: 'My Wallet', icon: 'wallet', onClick: () => openApp('mywallet') },
       { label: 'Solana Explorer', icon: 'explorer-web', onClick: () => openApp('solexplorer') },
       { label: 'Inbox', icon: 'inbox', onClick: () => openApp('inbox') },
+      { label: 'SolMessenger', icon: 'messenger', onClick: () => openApp('messenger') },
       { label: 'My Collectibles', icon: 'collectibles', onClick: () => openApp('collectibles') },
       { label: 'Mint Paint', icon: 'paint', onClick: () => openApp('paint') },
       { label: 'Send Wizard', icon: 'send', onClick: () => openApp('send') },
@@ -96,6 +102,20 @@ export function StartMenu() {
   const ref = useRef<HTMLDivElement>(null);
   const [programs, setPrograms] = useState<{ x: number; y: number } | null>(null);
   const hoverTimer = useRef<number | undefined>(undefined);
+  const nodes = useVfs((s) => s.nodes);
+  const allPrograms = useMemo<MenuItem[]>(() => {
+    const installed = installedPrograms(nodes);
+    const programFiles: MenuItem = {
+      label: 'Program Files',
+      icon: 'program-files',
+      submenu: [
+        ...installed.map((p): MenuItem => ({ label: p.name, icon: 'globe', onClick: () => openApp('program', { url: p.url, name: p.name }) })),
+        ...(installed.length ? [sep] : []),
+        { label: 'Add or Remove Programs', icon: 'add-remove', onClick: () => openApp('programs') },
+      ],
+    };
+    return [builtinPrograms[0], programFiles, ...builtinPrograms.slice(1)];
+  }, [nodes]);
 
   useEffect(() => {
     const onDown = (e: PointerEvent) => {

@@ -2,6 +2,7 @@ import { extname, keyOf, normalize, resolve } from './path';
 import { stat, MY_DOCUMENTS, RECYCLER, DESKTOP_DIR } from './vfs';
 import { findAppByAlias, openApp } from './windows';
 import { messageBox } from './dialogs';
+import { parseShortcut } from './programs/programs';
 
 /** Open a file or folder with its default program. */
 export function openPath(path: string, owner?: string): boolean {
@@ -18,6 +19,14 @@ export function openPath(path: string, owner?: string): boolean {
   if (n.type === 'dir') {
     openFolder(n.path);
     return true;
+  }
+  // Internet Shortcuts run as programs.
+  if (extname(n.path) === 'url') {
+    const url = parseShortcut(n.content ?? '');
+    if (url) {
+      openApp('program', { url, name: n.path.slice(n.path.lastIndexOf('\\') + 1).replace(/\.url$/i, '') });
+      return true;
+    }
   }
   // Pictures open in Picture Viewer; everything else is plain text.
   if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(extname(n.path))) openApp('pictures', { path: n.path });

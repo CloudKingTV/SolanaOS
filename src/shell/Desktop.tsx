@@ -43,6 +43,7 @@ function savePositions(p: Record<string, { col: number; row: number }>) {
 function fileIcon(path: string, isDir: boolean): IconName {
   if (isDir) return 'folder';
   if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(extname(path))) return 'image';
+  if (extname(path) === 'url') return 'globe';
   return extname(path) === 'txt' || extname(path) === 'md' ? 'file-text' : 'file';
 }
 
@@ -121,6 +122,20 @@ export function Desktop() {
         menu: () => [{ label: 'Open', bold: true, onClick: () => openApp('inbox') }],
       },
       {
+        key: 'sys:messenger',
+        label: 'SolMessenger',
+        icon: 'messenger',
+        open: () => openApp('messenger'),
+        menu: () => [{ label: 'Open', bold: true, onClick: () => openApp('messenger') }],
+      },
+      {
+        key: 'sys:solamp',
+        label: 'Solamp',
+        icon: 'solamp',
+        open: () => openApp('solamp'),
+        menu: () => [{ label: 'Play', bold: true, onClick: () => openApp('solamp') }],
+      },
+      {
         key: 'sys:paint',
         label: 'Mint Paint',
         icon: 'paint',
@@ -151,7 +166,7 @@ export function Desktop() {
     ];
     const files: DeskItem[] = list(DESKTOP_DIR, nodes).map((n) => ({
       key: keyOf(n.path),
-      label: displayName(n),
+      label: displayName(n).replace(/\.url$/i, ''),
       icon: fileIcon(n.path, n.type === 'dir'),
       path: n.path,
       renamable: true,

@@ -99,6 +99,19 @@ export const sounds = {
       { freq: hz(82), start: 0.12, dur: 0.9, gain: 0.3 },
     ]);
   },
+  message() {
+    // A bright two-note "new message" chirp.
+    play([
+      { freq: hz(84), start: 0, dur: 0.35, gain: 0.35, type: 'triangle' },
+      { freq: hz(91), start: 0.11, dur: 0.6, gain: 0.32, type: 'triangle' },
+    ]);
+  },
+  nudge() {
+    play(
+      Array.from({ length: 8 }, (_, i) => ({ freq: hz(i % 2 ? 43 : 46), start: i * 0.06, dur: 0.12, gain: 0.5, type: 'sawtooth' as const })),
+      0.14,
+    );
+  },
   ding() {
     play([
       { freq: hz(88), start: 0, dur: 0.7, gain: 0.35 },

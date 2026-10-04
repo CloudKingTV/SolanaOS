@@ -1,7 +1,7 @@
 {
   "name": "solanaos",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "A Windows XP-inspired desktop OS for Solana, running in the browser.",
   "scripts": {
