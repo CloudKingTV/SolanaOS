@@ -6,6 +6,7 @@ import { getCoreAssets } from '../../os/nft/core';
 import { audioFromJson, getTokenJson } from '../../os/solana/metadata';
 import { getRecentPerformanceSamples, getSlot, tpsFromSamples } from '../../os/solana/rpc';
 import { beatNotes } from '../../os/media/radio';
+import { enterPlaybackMode, leavePlaybackMode } from '../../os/media/unlock';
 import { messageBox } from '../../os/dialogs';
 import { useSettings } from '../../os/settings';
 import { MenuBar, sep } from '../../shell/Menu';
@@ -38,6 +39,7 @@ export function Solamp({ windowId }: AppProps) {
 
   const ctxRef = useRef<AudioContext | null>(null);
   const gainRef = useRef<GainNode | null>(null);
+  const radioBusRef = useRef<AudioNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const routedRef = useRef<HTMLAudioElement | null>(null); // goes through the visualizer
   const plainRef = useRef<HTMLAudioElement | null>(null); // fallback for hosts without CORS
@@ -54,9 +56,18 @@ export function Solamp({ windowId }: AppProps) {
     if (!ctxRef.current) {
       const ctx = new AudioContext();
       const gain = ctx.createGain();
+      gain.gain.value = muted ? 0 : volume;
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 128;
       gain.connect(analyser).connect(ctx.destination);
+      // The radio's synth voices get evened out and brought up to a phone-speaker-friendly level.
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -24;
+      comp.ratio.value = 4;
+      const makeup = ctx.createGain();
+      makeup.gain.value = 2.2;
+      comp.connect(makeup).connect(gain);
+      radioBusRef.current = comp;
       const el = new Audio();
       el.crossOrigin = 'anonymous';
       ctx.createMediaElementSource(el).connect(gain);
@@ -66,9 +77,9 @@ export function Solamp({ windowId }: AppProps) {
       routedRef.current = el;
       plainRef.current = new Audio();
     }
-    if (ctxRef.current.state === 'suspended') void ctxRef.current.resume();
+    if (ctxRef.current.state !== 'running') void ctxRef.current.resume().catch(() => {});
     return ctxRef.current;
-  }, []);
+  }, [muted, volume]);
 
   // Volume (and the system mute switch).
   useEffect(() => {
@@ -107,14 +118,24 @@ export function Solamp({ windowId }: AppProps) {
         for (const n of beatNotes(st.beat, st.tps, st.seed, BEAT)) {
           const osc = c.createOscillator();
           const g = c.createGain();
-          osc.type = n.kind === 'bass' ? 'triangle' : n.kind === 'pad' ? 'sine' : 'square';
+          // Sawtooth bass has the harmonics that let small speakers "hear" the low notes.
+          osc.type = n.kind === 'bass' ? 'sawtooth' : n.kind === 'pad' ? 'triangle' : 'square';
           osc.frequency.value = hz(n.midi);
           const start = st.nextTime + n.at;
-          const peak = n.kind === 'lead' ? n.gain * 0.35 : n.gain;
+          const peak = n.kind === 'lead' ? n.gain * 0.5 : n.kind === 'pad' ? n.gain * 2 : n.gain * 0.6;
           g.gain.setValueAtTime(0, start);
           g.gain.linearRampToValueAtTime(peak, start + Math.min(0.02, n.dur / 4));
           g.gain.exponentialRampToValueAtTime(0.0001, start + n.dur);
-          osc.connect(g).connect(gainRef.current!);
+          let out: AudioNode = g;
+          if (n.kind !== 'pad') {
+            const lp = c.createBiquadFilter();
+            lp.type = 'lowpass';
+            lp.frequency.value = n.kind === 'bass' ? 900 : 3200;
+            g.connect(lp);
+            out = lp;
+          }
+          osc.connect(g);
+          out.connect(radioBusRef.current!);
           osc.start(start);
           osc.stop(start + n.dur + 0.05);
         }
@@ -162,7 +183,12 @@ export function Solamp({ windowId }: AppProps) {
       if (!t) return;
       stopAll();
       setIndex(i);
-      audio();
+      // Must run inside the tap: switches phones to media playback (iPhone silent switch).
+      enterPlaybackMode();
+      const ctx = audio();
+      window.setTimeout(() => {
+        if (ctx.state !== 'running') setStatus('Tap ▶ again for sound');
+      }, 800);
       if (t.kind === 'radio') {
         startRadio();
         setPlaying(true);
@@ -197,17 +223,20 @@ export function Solamp({ windowId }: AppProps) {
   const pause = () => {
     if (track.kind === 'radio') {
       stopAll();
+      leavePlaybackMode();
       setStatus('Stopped');
       return;
     }
     const el = usingPlain.current ? plainRef.current : routedRef.current;
     if (!el) return;
     if (el.paused) {
+      enterPlaybackMode();
       void el.play();
       setPlaying(true);
       setStatus('Playing');
     } else {
       el.pause();
+      leavePlaybackMode();
       setPlaying(false);
       setStatus('Paused');
     }
@@ -215,6 +244,7 @@ export function Solamp({ windowId }: AppProps) {
 
   const stop = () => {
     stopAll();
+    leavePlaybackMode();
     setStatus('Stopped');
   };
   const next = () => void play((index + 1) % tracks.length);
@@ -277,6 +307,7 @@ export function Solamp({ windowId }: AppProps) {
   useEffect(
     () => () => {
       stopRadio();
+      leavePlaybackMode();
       routedRef.current?.pause();
       plainRef.current?.pause();
       void ctxRef.current?.close();
@@ -370,13 +401,13 @@ export function Solamp({ windowId }: AppProps) {
         <div className="sa-display">
           <div className="sa-lcd">
             <span className="sa-time">{track.kind === 'radio' && playing ? 'LIVE' : fmt(time)}</span>
-            <span className="sa-state">{status}</span>
+            <span className="sa-state">{muted ? 'Muted' : status}</span>
           </div>
           <div className="sa-marquee" title={track.title}>
             <span>{track.title}</span>
           </div>
           <div className="sa-info">
-            {track.kind === 'radio' ? `TPS ${tps ? Math.round(tps).toLocaleString('en-US') : '…'} · notes follow the chain` : track.kind === 'nft' ? 'Music NFT' : 'Local file'}
+            {muted ? 'Sound is off. Tap the speaker in the taskbar.' : track.kind === 'radio' ? `TPS ${tps ? Math.round(tps).toLocaleString('en-US') : '…'} · notes follow the chain` : track.kind === 'nft' ? 'Music NFT' : 'Local file'}
           </div>
         </div>
         <canvas ref={canvasRef} className="sa-viz" width={100} height={64} aria-hidden="true" />
