@@ -116,6 +116,8 @@ export function Messenger({ windowId }: AppProps) {
               className={b.unread ? 'unread' : ''}
               tabIndex={0}
               onDoubleClick={() => openChat(b.address)}
+              // Touch screens: one tap opens the conversation.
+              onClick={() => window.matchMedia('(pointer: coarse)').matches && openChat(b.address)}
               onKeyDown={(e) => e.key === 'Enter' && openChat(b.address)}
               onContextMenu={(e) => buddyMenu(e, b)}
               title={`${b.address}\nDouble-click to chat`}
@@ -190,6 +192,20 @@ export function Messenger({ windowId }: AppProps) {
           <div className="ms-warning">⚠ Messages are public and permanent on-chain. Each one costs a network fee.</div>
           {error && <div className="ms-error">Couldn't check messages: {error}</div>}
           <div className="ms-list">
+            {buddies.saved.length === 0 && buddies.others.length === 0 && (
+              <div className="ms-howto">
+                <b>How to chat</b>
+                <ol>
+                  <li>
+                    Tap <b>+ Add a Contact</b> and paste your friend&apos;s wallet address.
+                  </li>
+                  <li>Tap their name (double-click on a computer) to open a conversation.</li>
+                  <li>Type a message and tap Send. Your wallet asks you to approve it (fee ≈ 0.000005 SOL).</li>
+                  <li>Their reply shows up here within about 20 seconds, as long as they use the same network ({clusterLabel(cluster)}).</li>
+                </ol>
+                <small>Your friend can read and answer in SolanaOS, or see your messages as memos in any Solana explorer.</small>
+              </div>
+            )}
             {group('saved', 'Contacts', buddies.saved, 'No contacts yet — add a wallet address.')}
             {group('others', 'Other wallets that messaged you', buddies.others, 'Nobody else yet.')}
           </div>

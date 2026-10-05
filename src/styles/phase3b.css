@@ -674,3 +674,19 @@
 .sa-pl-buttons .btn {
   color: #000;
 }
+.ms-howto {
+  margin: 4px 4px 8px;
+  padding: 6px 8px;
+  border: 1px solid #c4bce6;
+  background: #f6f3ff;
+}
+.ms-howto ol {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+.ms-howto li {
+  margin-bottom: 3px;
+}
+.ms-howto small {
+  color: #666;
+}
